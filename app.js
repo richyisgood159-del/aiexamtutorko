@@ -59,15 +59,20 @@ const visualMap={
 };
 const drawingQuestions=new Set(['6(a)']);
 const app=document.getElementById('app');
+const STORAGE_VERSION='v63clean';
+const STATE_KEY='examTutorState_'+STORAGE_VERSION;
+const DRAW_KEY='examTutorDrawings_'+STORAGE_VERSION;
 const defaultState={view:'papers',paper:null,qi:0,answers:{},results:{},confidence:{}};
 let state={...defaultState};
 try{
-  const saved=JSON.parse(localStorage.getItem('examTutorState_v6')||'null');
+  const saved=JSON.parse(localStorage.getItem(STATE_KEY)||'null');
   if(saved&&typeof saved==='object') state={...defaultState,...saved,answers:saved.answers||{},results:saved.results||{},confidence:saved.confidence||{}};
 }catch(e){ state={...defaultState}; }
 if(state.paper&&state.paper.id) state.paper=papers.find(p=>p.id===state.paper.id)||null;
+let drawData={};
+try{drawData=JSON.parse(localStorage.getItem(DRAW_KEY)||'{}')||{}}catch(e){drawData={}}
 function persist(){
-  try{localStorage.setItem('examTutorState_v6',JSON.stringify({...state,paper:state.paper?{id:state.paper.id}:null}))}catch(e){}
+  try{localStorage.setItem(STATE_KEY,JSON.stringify({...state,paper:state.paper?{id:state.paper.id}:null}))}catch(e){}
 }
 function go(view){state.view=view;if(view==='papers'){state.paper=null;state.qi=0}persist();render()}
 function openPaper(id){state.paper=papers.find(p=>p.id===id)||papers[0];state.view='questions';state.qi=0;persist();render()}
@@ -75,15 +80,11 @@ function openQ(i){state.qi=Math.max(0,Math.min(qs.length-1,Number(i)||0));state.
 function prevQ(){if(state.qi>0){state.qi--;persist();render()}}
 function nextQ(){if(state.qi<qs.length-1){state.qi++;persist();render()}}
 function setConfidence(v){let key=state.paper.id+'-'+state.qi;state.confidence[key]=v;persist();render()}
-function resetProgress(){if(!state.paper)return;let prefix=state.paper.id+'-';for(const k of Object.keys(state.answers))if(k.startsWith(prefix))delete state.answers[k];for(const k of Object.keys(state.results))if(k.startsWith(prefix))delete state.results[k];for(const k of Object.keys(state.confidence))if(k.startsWith(prefix))delete state.confidence[k];for(const k of Object.keys(drawData||{}))if(k.startsWith(prefix))delete drawData[k];localStorage.setItem('examTutorDrawings_v6',JSON.stringify(drawData||{}));persist();render()}
+function resetProgress(){if(!state.paper)return;let prefix=state.paper.id+'-';for(const k of Object.keys(state.answers))if(k.startsWith(prefix))delete state.answers[k];for(const k of Object.keys(state.results))if(k.startsWith(prefix))delete state.results[k];for(const k of Object.keys(state.confidence))if(k.startsWith(prefix))delete state.confidence[k];for(const k of Object.keys(drawData||{}))if(k.startsWith(prefix))delete drawData[k];localStorage.setItem(DRAW_KEY,JSON.stringify(drawData||{}));persist();render()}
 function aiKey(){return sessionStorage.getItem('examTutorOpenRouterKey')||''}
 function saveAiKey(){let e=document.getElementById('aiKey'),v=(e?.value||'').trim();if(!v)return alert('Paste your OpenRouter API key first.');sessionStorage.setItem('examTutorOpenRouterKey',v);render()}
 function removeAiKey(){sessionStorage.removeItem('examTutorOpenRouterKey');render()}
 function esc(v){return String(v??'').replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]))}
-const STORAGE_VERSION='v6';
-const STATE_KEY='examTutorState_'+STORAGE_VERSION;
-const DRAW_KEY='examTutorDrawings_'+STORAGE_VERSION;
-let drawData=JSON.parse(localStorage.getItem(DRAW_KEY)||'{}');
 function qpFile(p){return p.id==='wbi11a-2601'?'biology-u1a-jan26-qp.pdf':'biology-u1-jan26-qp.pdf'}
 function msFile(p){return p.id==='wbi11a-2601'?'biology-u1a-jan26-ms.pdf':'biology-u1-jan26-ms.pdf'}
 function sourcePages(q,p,kind='qp'){
@@ -120,11 +121,11 @@ function saveDrawing(){let c=document.querySelector('#drawCanvas');if(!c)return;
 function undoDraw(){strokes.pop();saveDrawing();redraw()}function clearDrawing(){strokes=[];saveDrawing();redraw()}
 function drawingStats(){let pts=strokes.reduce((n,s)=>n+s.length,0),len=0,minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;for(const st of strokes){for(let i=0;i<st.length;i++){let [x,y]=st[i];minX=Math.min(minX,x);minY=Math.min(minY,y);maxX=Math.max(maxX,x);maxY=Math.max(maxY,y);if(i){let [px,py]=st[i-1];len+=Math.hypot(x-px,y-py)}}}return {strokes:strokes.length,pts,len,bbox:(isFinite(minX)?[minX,minY,maxX,maxY]:null)};}
 function validDrawingAttempt(){let d=drawingStats();return d.strokes>=2 && d.pts>=8 && d.len>=45;}
-function canvasDataUrl(){let c=document.querySelector('#drawCanvas');return c?c.toDataURL('image/png'):''}
+function canvasDataUrl(){let d=drawingStats();if(!d.bbox)return null;let [minX,minY,maxX,maxY]=d.bbox,pad=28;minX=Math.max(0,minX-pad);minY=Math.max(0,minY-pad);maxX+=pad;maxY+=pad;let w=Math.max(1,maxX-minX),h=Math.max(1,maxY-minY),scale=Math.min(1,640/Math.max(w,h));let out=document.createElement('canvas');out.width=Math.max(1,Math.round(w*scale));out.height=Math.max(1,Math.round(h*scale));let x=out.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,out.width,out.height);x.strokeStyle='#111';x.lineWidth=Math.max(2,3*scale);x.lineCap='round';x.lineJoin='round';for(const st of strokes){if(st.length<1)continue;x.beginPath();x.moveTo((st[0][0]-minX)*scale,(st[0][1]-minY)*scale);for(let i=1;i<st.length;i++)x.lineTo((st[i][0]-minX)*scale,(st[i][1]-minY)*scale);x.stroke()}return out.toDataURL('image/jpeg',0.78)}
 function setupAI(){let existing=aiKey();return `<div class="ai-setup"><b>AI examiner setup</b><p class="ai-note">Connect an OpenRouter key to turn on semantic AI marking. The key is kept only in this browser tab/session in this prototype and is not included in the downloaded project.</p><input id="aiKey" type="password" autocomplete="off" placeholder="OpenRouter API key" value="${esc(existing)}"><button class="secondary" onclick="saveAiKey()">${existing?'Update key':'Connect AI'}</button>${existing?` <button class="danger-link" onclick="removeAiKey()">Disconnect</button>`:''}</div>`}
 function schemeText(q){if(q.type==='mcq')return `Correct option: ${q.correct}.`;if(q.groups)return q.groups.map((g,i)=>`Accepted route ${i+1}: ${g.map(x=>x[0]).join(' | ')}`).join('\n');if(q.alts)return `Accept one of: ${q.alts.join('; ')}`;return (q.scheme||[]).map((x,i)=>`${i+1}. ${x[0]}`).join('\n')+(q.cap?`\nMaximum ${q.cap} marks.`:'')+(q.note?`\nExaminer guidance: ${q.note}`:'')}
 function parseAIJson(raw){let t=String(raw||'').trim().replace(/^```(?:json)?/i,'').replace(/```$/,'').trim();let a=t.indexOf('{'),b=t.lastIndexOf('}');if(a>=0&&b>a)t=t.slice(a,b+1);return JSON.parse(t)}
-function canvasDataUrl(){let c=document.querySelector('#drawCanvas');if(!c)return null;return c.toDataURL('image/png');}
+function canvasDataUrl(){let d=drawingStats();if(!d.bbox)return null;let [minX,minY,maxX,maxY]=d.bbox,pad=28;minX=Math.max(0,minX-pad);minY=Math.max(0,minY-pad);maxX+=pad;maxY+=pad;let w=Math.max(1,maxX-minX),h=Math.max(1,maxY-minY),scale=Math.min(1,640/Math.max(w,h));let out=document.createElement('canvas');out.width=Math.max(1,Math.round(w*scale));out.height=Math.max(1,Math.round(h*scale));let x=out.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,out.width,out.height);x.strokeStyle='#111';x.lineWidth=Math.max(2,3*scale);x.lineCap='round';x.lineJoin='round';for(const st of strokes){if(st.length<1)continue;x.beginPath();x.moveTo((st[0][0]-minX)*scale,(st[0][1]-minY)*scale);for(let i=1;i<st.length;i++)x.lineTo((st[i][0]-minX)*scale,(st[i][1]-minY)*scale);x.stroke()}return out.toDataURL('image/jpeg',0.78)}
 function drawingStats(){let pts=strokes.reduce((n,s)=>n+s.length,0),len=0,minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;for(const st of strokes){for(let i=0;i<st.length;i++){let [x,y]=st[i];minX=Math.min(minX,x);minY=Math.min(minY,y);maxX=Math.max(maxX,x);maxY=Math.max(maxY,y);if(i){let [px,py]=st[i-1];len+=Math.hypot(x-px,y-py)}}}return {strokes:strokes.length,pts,len,bbox:(isFinite(minX)?[minX,minY,maxX,maxY]:null)};}
 function validDrawingAttempt(){let d=drawingStats();return d.strokes>=2 && d.pts>=8 && d.len>=45;}
 function embeddedImages(kind,q){return window.EXAM_TUTOR_IMAGES?.[kind]?.[q.n]||[]}
@@ -145,8 +146,8 @@ async function aiMark(){let p=state.paper,q=qs[state.qi],key=p.id+'-'+state.qi;
  }
  try{
    let cfg=window.EXAM_TUTOR_AI||{};
-   let controller=new AbortController(),timer=setTimeout(()=>controller.abort(),18000);
-   let res=await fetch(cfg.endpoint||'https://openrouter.ai/api/v1/chat/completions',{method:'POST',signal:controller.signal,headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json','X-Title':'Private Exam Tutor'},body:JSON.stringify({model:cfg.model||'google/gemma-4-31b-it:free',temperature:0,max_tokens:drawingQuestions.has(q.n)?260:420,response_format:{type:'json_object'},messages:[{role:'system',content:system},{role:'user',content:userContent}]})});clearTimeout(timer);
+   let controller=new AbortController(),timer=setTimeout(()=>controller.abort(),30000);
+   let res=await fetch(cfg.endpoint||'https://openrouter.ai/api/v1/chat/completions',{method:'POST',signal:controller.signal,headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json','X-Title':'Private Exam Tutor'},body:JSON.stringify({model:cfg.model||'inclusionai/ling-3.0-flash-vl:free',temperature:0,max_tokens:drawingQuestions.has(q.n)?160:420,messages:[{role:'system',content:system},{role:'user',content:userContent}],...(drawingQuestions.has(q.n)?{}:{response_format:{type:'json_object'}})})});clearTimeout(timer);
    let data=await res.json();if(!res.ok)throw new Error(data?.error?.message||`API error ${res.status}`);let raw=data?.choices?.[0]?.message?.content;if(!raw)throw new Error('The AI returned an empty response.');let j=parseAIJson(raw);
    let details,score;
    if(drawingQuestions.has(q.n)){
@@ -158,7 +159,7 @@ async function aiMark(){let p=state.paper,q=qs[state.qi],key=p.id+'-'+state.qi;
      if(!criteria.length)throw new Error('The vision examiner did not return criterion-by-criterion evidence. No mark was saved.');
    }else{score=Math.max(0,Math.min(q.marks,Number(j.score)||0));details=[...(j.awarded||[]).map(x=>({ok:true,text:x})),...(j.missed||[]).map(x=>({ok:false,text:x}))];}
    state.results[key]={score,details,answer:a,ai:true,feedback:j.feedback||'',improved:j.improved_answer||'',attemptedAt:Date.now()};persist();render();
- }catch(e){alert('AI marking could not run reliably: '+(e.name==='AbortError'?'The examiner timed out after 18 seconds.':e.message)+'\n\nNo AI mark has been saved. Your answer/drawing is still here, and you can compare it with the official mark scheme.');render();}
+ }catch(e){alert('AI marking could not run reliably: '+(e.name==='AbortError'?'The examiner did not respond within 30 seconds.':e.message)+'\n\nNo AI mark has been saved. Your answer/drawing is still here, and you can compare it with the official mark scheme.');render();}
 }
 function render(){ if(state.view==='papers') papersView(); else if(state.view==='questions') questionList(); else viewer(); }
 function papersView(){app.innerHTML=`<div class="hero"><div><span class="eyebrow">YOUR STUDY STACKS</span><h1>What do you want to practise?</h1><p>Exam questions, instant marking and feedback from the official Pearson mark scheme.</p></div><div class="stat"><b>2</b><span>active stacks</span></div></div><div class="sectionTitle"><div><h2>Biology · Unit 1</h2><p>Molecules, Diet, Transport and Health</p></div></div><div class="paperGrid">${papers.map(p=>`<article class="paperCard" onclick="openPaper('${p.id}')"><div class="paperTop"><span class="subjectBadge">BIOLOGY</span><span class="ready">● Ready</span></div><h3>${p.title}</h3><p>${p.code}</p>${p.id==='wbi11a-2601'?'<p class="paper-note">01A uses the same assessment questions as 01; Pearson supplies a separate Answer Book.</p>':''}<div class="paperMeta"><span>${p.time}</span><span>${p.marks} marks</span></div><button class="primary">Open stack →</button></article>`).join('')}</div><div class="notice"><b>Marking source:</b> the supplied Pearson mark schemes. All questions from the January 2026 Unit 1 paper are now included. The original PDFs remain available inside each paper.</div>`}
