@@ -59,8 +59,8 @@ const visualMap={
 };
 const drawingQuestions=new Set(['6(a)']);
 const app=document.getElementById('app');
-const BUILD_ID='v66-final';
-const STORAGE_VERSION='v66fresh';
+const BUILD_ID='v67-stable';
+const STORAGE_VERSION='v67fresh';
 const STATE_KEY='examTutorState_'+STORAGE_VERSION;
 const DRAW_KEY='examTutorDrawings_'+STORAGE_VERSION;
 // A new deployed build gets one genuinely clean start, then progress persists normally.
@@ -82,8 +82,7 @@ try{
   if(saved&&typeof saved==='object') state={...defaultState,...saved,answers:saved.answers||{},results:saved.results||{},confidence:saved.confidence||{}};
 }catch(e){ state={...defaultState}; }
 if(state.paper&&state.paper.id) state.paper=papers.find(p=>p.id===state.paper.id)||null;
-let drawData={};
-try{drawData=JSON.parse(localStorage.getItem(DRAW_KEY)||'{}')||{}}catch(e){drawData={}}
+let drawData={}; // v6.7: drawings are intentionally session-only so an old sketch can never reappear after reload/deploy
 function persist(){try{localStorage.setItem(STATE_KEY,JSON.stringify({...state,paper:state.paper?{id:state.paper.id}:null}))}catch(e){}}
 function go(view){state.view=view;if(view==='papers'){state.paper=null;state.qi=0}persist();render()}
 function openPaper(id){state.paper=papers.find(p=>p.id===id)||papers[0];state.view='questions';state.qi=0;persist();render()}
@@ -91,7 +90,7 @@ function openQ(i){state.qi=Math.max(0,Math.min(qs.length-1,Number(i)||0));state.
 function prevQ(){if(state.qi>0){state.qi--;persist();render()}}
 function nextQ(){if(state.qi<qs.length-1){state.qi++;persist();render()}}
 function setConfidence(v){let key=state.paper.id+'-'+state.qi;state.confidence[key]=v;persist();render()}
-function resetProgress(){if(!state.paper)return;let prefix=state.paper.id+'-';for(const k of Object.keys(state.answers))if(k.startsWith(prefix))delete state.answers[k];for(const k of Object.keys(state.results))if(k.startsWith(prefix))delete state.results[k];for(const k of Object.keys(state.confidence))if(k.startsWith(prefix))delete state.confidence[k];for(const k of Object.keys(drawData||{}))if(k.startsWith(prefix))delete drawData[k];try{localStorage.setItem(DRAW_KEY,JSON.stringify(drawData||{}))}catch(e){}persist();render()}
+function resetProgress(){if(!state.paper)return;let prefix=state.paper.id+'-';for(const k of Object.keys(state.answers))if(k.startsWith(prefix))delete state.answers[k];for(const k of Object.keys(state.results))if(k.startsWith(prefix))delete state.results[k];for(const k of Object.keys(state.confidence))if(k.startsWith(prefix))delete state.confidence[k];for(const k of Object.keys(drawData||{}))if(k.startsWith(prefix))delete drawData[k];persist();render()}
 function resetEverything(){
   if(!confirm('Clear every saved answer, mark, confidence rating and drawing from Exam Tutor on this browser?'))return;
   state={...defaultState,answers:{},results:{},confidence:{}};drawData={};strokes=[];
@@ -134,7 +133,7 @@ function markTriglycerideBuilder(){let key=state.paper.id+'-'+state.qi,p=buildPi
 let strokes=[],currentStroke=null;
 function initDrawing(){let c=document.querySelector('#drawCanvas');if(!c)return;let key=state.paper.id+'-'+state.qi;let dpr=window.devicePixelRatio||1,w=c.clientWidth,h=420;c.width=w*dpr;c.height=h*dpr;let ctx=c.getContext('2d');ctx.scale(dpr,dpr);ctx.lineWidth=3;ctx.lineCap='round';ctx.lineJoin='round';strokes=drawData[key]||[];redraw();let pos=e=>{let r=c.getBoundingClientRect(),pt=e.touches?e.touches[0]:e;return [pt.clientX-r.left,pt.clientY-r.top]};let start=e=>{e.preventDefault();currentStroke=[pos(e)];strokes.push(currentStroke);drawData[key]=strokes};let move=e=>{if(!currentStroke)return;e.preventDefault();currentStroke.push(pos(e));redraw()};let end=()=>{currentStroke=null;saveDrawing()};c.addEventListener('pointerdown',start);c.addEventListener('pointermove',move);window.addEventListener('pointerup',end,{once:false});}
 function redraw(){let c=document.querySelector('#drawCanvas');if(!c)return;let ctx=c.getContext('2d'),dpr=window.devicePixelRatio||1;ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,c.width,c.height);ctx.restore();ctx.beginPath();for(let st of strokes){if(!st.length)continue;ctx.moveTo(st[0][0],st[0][1]);for(let i=1;i<st.length;i++)ctx.lineTo(st[i][0],st[i][1]);}ctx.stroke();}
-function saveDrawing(){let c=document.querySelector('#drawCanvas');if(!c)return;let key=state.paper.id+'-'+state.qi;drawData[key]=strokes;localStorage.setItem(DRAW_KEY,JSON.stringify(drawData));persist();}
+function saveDrawing(){let c=document.querySelector('#drawCanvas');if(!c)return;let key=state.paper.id+'-'+state.qi;drawData[key]=strokes;persist();}
 function undoDraw(){strokes.pop();saveDrawing();redraw()}function clearDrawing(){strokes=[];saveDrawing();redraw()}
 function drawingStats(){let pts=strokes.reduce((n,s)=>n+s.length,0),len=0,minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;for(const st of strokes){for(let i=0;i<st.length;i++){let [x,y]=st[i];minX=Math.min(minX,x);minY=Math.min(minY,y);maxX=Math.max(maxX,x);maxY=Math.max(maxY,y);if(i){let [px,py]=st[i-1];len+=Math.hypot(x-px,y-py)}}}return {strokes:strokes.length,pts,len,bbox:(isFinite(minX)?[minX,minY,maxX,maxY]:null)};}
 function validDrawingAttempt(){let d=drawingStats();return d.strokes>=2 && d.pts>=8 && d.len>=45;}
@@ -154,9 +153,20 @@ function lineValue(text,label){
 function parseYes(v){return /^(yes|true|met|1)\b/i.test(String(v||'').trim())}
 function parseDrawingReply(raw){
  const t=extractTextContent(raw).trim(); if(!t)return null;
- const m1=lineValue(t,'M1'),m2=lineValue(t,'M2'); if(!m1&&!m2)return null;
- const ok1=parseYes(m1),ok2=ok1&&parseYes(m2);
- return {score:(ok1?1:0)+(ok2?1:0),criteria:[{criterion:'M1',met:ok1,visible_evidence:lineValue(t,'M1_EVIDENCE')||m1},{criterion:'M2',met:ok2,visible_evidence:lineValue(t,'M2_EVIDENCE')||m2}],feedback:lineValue(t,'FEEDBACK'),improved_answer:lineValue(t,'IMPROVED')};
+ // Preferred: JSON object returned by OpenRouter structured-output routing.
+ try{
+   const cleaned=t.replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'').trim();
+   const j=JSON.parse(cleaned);
+   const score=Number(j.score);
+   if(Number.isFinite(score)&&score>=0&&score<=2){
+     const m1=!!j.m1, m2=m1&&!!j.m2;
+     return {score:(m1?1:0)+(m2?1:0),criteria:[{criterion:'M1',met:m1,visible_evidence:String(j.m1_evidence||'')},{criterion:'M2',met:m2,visible_evidence:String(j.m2_evidence||'')}],feedback:String(j.feedback||''),improved_answer:String(j.improved||'')};
+   }
+ }catch(_){}
+ // Fallback for a provider that ignores response_format but still follows the prompt.
+ const m1=lineValue(t,'M1'),m2=lineValue(t,'M2');
+ if(m1||m2){const ok1=parseYes(m1),ok2=ok1&&parseYes(m2);return {score:(ok1?1:0)+(ok2?1:0),criteria:[{criterion:'M1',met:ok1,visible_evidence:lineValue(t,'M1_EVIDENCE')||m1},{criterion:'M2',met:ok2,visible_evidence:lineValue(t,'M2_EVIDENCE')||m2}],feedback:lineValue(t,'FEEDBACK'),improved_answer:lineValue(t,'IMPROVED')}};
+ return null;
 }
 function parseWrittenReply(raw,max){
  const t=extractTextContent(raw).trim(); if(!t)return null;
@@ -179,11 +189,12 @@ async function aiMark(){
  : `You are a strict Pearson Edexcel International A Level Biology examiner. Use ONLY the official question-specific guidance below. Reward scientifically equivalent wording but invent no extra marks.\nQuestion ${q.n} (${q.marks} marks): ${q.q}\nOfficial marking guidance: ${schemeText(q)}\nStudent answer: ${a}\nReply using EXACTLY these five plain-text lines, no JSON and no markdown:\nSCORE: integer from 0 to ${q.marks}\nAWARDED: credited points separated by |\nMISSED: missing points separated by |\nFEEDBACK: one short sentence\nIMPROVED: concise full-mark answer`;
  let userContent=prompt;
  if(isDrawing){const img=canvasDataUrl();userContent=[{type:'text',text:prompt},{type:'image_url',image_url:{url:img}}]}
- const candidates=isDrawing?['qwen/qwen3.8-27b:free','google/gemma-4-26b-a4b-it:free','openrouter/free']:['qwen/qwen3.8-27b:free','openrouter/free'];
+ const candidates=isDrawing?['openrouter/free','google/gemma-4-31b-it:free','google/gemma-4-26b-a4b-it:free']:['openrouter/free','google/gemma-4-31b-it:free'];
  async function attempt(model,timeoutMs){
    const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),timeoutMs);
    try{
-     const body={model,temperature:0,max_tokens:isDrawing?140:300,messages:[{role:'user',content:userContent}],provider:{allow_fallbacks:true,sort:'latency'}};
+     const body={model,temperature:0,max_tokens:isDrawing?180:300,messages:[{role:'user',content:userContent}],provider:{allow_fallbacks:true,sort:'latency'}};
+     if(isDrawing){body.response_format={type:'json_schema',json_schema:{name:'drawing_mark',strict:true,schema:{type:'object',additionalProperties:false,properties:{score:{type:'integer',minimum:0,maximum:2},m1:{type:'boolean'},m1_evidence:{type:'string'},m2:{type:'boolean'},m2_evidence:{type:'string'},feedback:{type:'string'},improved:{type:'string'}},required:['score','m1','m1_evidence','m2','m2_evidence','feedback','improved']}}};}
      const res=await fetch(endpoint,{method:'POST',signal:controller.signal,headers:{Authorization:'Bearer '+token,'Content-Type':'application/json','HTTP-Referer':location.origin,'X-Title':'Private Exam Tutor'},body:JSON.stringify(body)});
      const rawBody=await res.text();
      if(!res.ok){let msg=`OpenRouter ${res.status}`;try{msg=JSON.parse(rawBody)?.error?.message||msg}catch(_){}throw new Error(msg)}
@@ -197,7 +208,7 @@ async function aiMark(){
  try{
    let j=null,lastErr=null;
    for(let i=0;i<candidates.length;i++){
-     try{if(btn)btn.textContent=i===0?'Marking…':`Backup ${i}/${candidates.length-1}…`;j=await attempt(candidates[i],i===0?12000:10000);break}catch(e){lastErr=e}
+     try{if(btn)btn.textContent=i===0?'Marking…':`Backup ${i}/${candidates.length-1}…`;j=await attempt(candidates[i],i===0?15000:12000);break}catch(e){lastErr=e}
    }
    if(!j)throw lastErr||new Error('No examiner was available');
    let details,score;
@@ -212,7 +223,7 @@ async function aiMark(){
 }
 
 function render(){ if(state.view==='papers') papersView(); else if(state.view==='questions') questionList(); else viewer(); }
-function papersView(){app.innerHTML=`<div class="hero"><div><span class="eyebrow">YOUR STUDY STACKS · v6.6 FINAL</span><h1>What do you want to practise?</h1><p>Exam questions, instant marking and feedback from the official Pearson mark scheme.</p></div><div class="stat"><b>2</b><span>active stacks</span></div></div><div class="sectionTitle"><div><h2>Biology · Unit 1</h2><p>Molecules, Diet, Transport and Health</p></div></div><div class="paperGrid">${papers.map(p=>`<article class="paperCard" onclick="openPaper('${p.id}')"><div class="paperTop"><span class="subjectBadge">BIOLOGY</span><span class="ready">● Ready</span></div><h3>${p.title}</h3><p>${p.code}</p>${p.id==='wbi11a-2601'?'<p class="paper-note">01A uses the same assessment questions as 01; Pearson supplies a separate Answer Book.</p>':''}<div class="paperMeta"><span>${p.time}</span><span>${p.marks} marks</span></div><button class="primary">Open stack →</button></article>`).join('')}</div><div class="notice"><b>Marking source:</b> the supplied Pearson mark schemes. All questions from the January 2026 Unit 1 paper are now included. The original PDFs remain available inside each paper.</div>`}
+function papersView(){app.innerHTML=`<div class="hero"><div><span class="eyebrow">YOUR STUDY STACKS · v6.7 STABLE</span><h1>What do you want to practise?</h1><p>Exam questions, instant marking and feedback from the official Pearson mark scheme.</p></div><div class="stat"><b>2</b><span>active stacks</span></div></div><div class="sectionTitle"><div><h2>Biology · Unit 1</h2><p>Molecules, Diet, Transport and Health</p></div></div><div class="paperGrid">${papers.map(p=>`<article class="paperCard" onclick="openPaper('${p.id}')"><div class="paperTop"><span class="subjectBadge">BIOLOGY</span><span class="ready">● Ready</span></div><h3>${p.title}</h3><p>${p.code}</p>${p.id==='wbi11a-2601'?'<p class="paper-note">01A uses the same assessment questions as 01; Pearson supplies a separate Answer Book.</p>':''}<div class="paperMeta"><span>${p.time}</span><span>${p.marks} marks</span></div><button class="primary">Open stack →</button></article>`).join('')}</div><div class="notice"><b>Marking source:</b> the supplied Pearson mark schemes. All questions from the January 2026 Unit 1 paper are now included. The original PDFs remain available inside each paper.</div>`}
 function questionList(){let p=state.paper;app.innerHTML=`<button class="back" onclick="go('papers')">← Papers</button><div class="paperHeader"><div><span class="subjectBadge">BIOLOGY</span><h1>${p.title}</h1><p>${p.code} · ${p.time} · ${p.marks} marks</p></div><div class="pdfBtns"><a href="${p.qp}" target="_blank">Question paper ↗</a><a href="${p.ms}" target="_blank">Mark scheme ↗</a></div></div><div class="paper-tools"><span>${Object.keys(state.results).filter(k=>k.startsWith(p.id)).length} / ${qs.length} parts attempted</span><button class="secondary" onclick="resetProgress()">Reset paper progress</button> <button class="secondary" onclick="resetEverything()">Clear ALL saved answers</button></div><div class="questionList">${qs.map((q,i)=>{let r=state.results[p.id+'-'+i],c=state.confidence[p.id+'-'+i];return `<div class="qrow" onclick="openQ(${i})"><div class="qnum">${q.n}</div><div class="grow"><b>${q.q}</b><span>${q.marks} mark${q.marks>1?'s':''}${c?' · confidence: '+c:''}</span></div>${r?`<div class="miniScore">${r.score}/${q.marks}</div>`:'<div class="unattempted">Not attempted</div>'}<div class="chev">›</div></div>`}).join('')}</div>`}
 function answerUI(q,key){if(drawingQuestions.has(q.n))return drawingUI(key);if(q.type==='mcq')return `<div class="choices">${q.options.map(o=>`<label><input type="radio" name="mcq" value="${o[0]}" ${state.answers[key]===o[0]?'checked':''}> <span>${o}</span></label>`).join('')}</div>`;return `<textarea id="ans" class="answer" placeholder="Write your exam answer here...">${esc(state.answers[key]||'')}</textarea>`}
 function viewer(){let p=state.paper,q=qs[state.qi],key=p.id+'-'+state.qi,r=state.results[key];app.innerHTML=`<div class="viewer-nav"><button class="back" onclick="state.view='questions';persist();render()">← Questions</button><div><button class="secondary" onclick="prevQ()" ${state.qi===0?'disabled':''}>← Previous</button> <button class="secondary" onclick="nextQ()" ${state.qi===qs.length-1?'disabled':''}>Next →</button></div></div><div class="viewer"><section class="exam"><div class="examBar"><span>${p.code}</span><b>${q.marks} MARK${q.marks>1?'S':''}</b></div><div class="qn">Question ${q.n}</div><div class="source-title"><b>Actual exam question</b><span>Shown directly from your Pearson paper so every diagram, graph, table and photo stays intact.</span></div><div class="source-pages">${sourcePages(q,p,'qp')}</div><details class="typed-question"><summary>Text version</summary><div class="questionText">${q.q}</div></details>${answerUI(q,key)}<div class="confidence"><span>How confident are you?</span>${['Low','Medium','High'].map(v=>`<button data-v="${v}" class="${state.confidence[key]===v?'active':''}" onclick="setConfidence('${v}')">${v}</button>`).join('')}</div><div class="actions"><button class="primary" id="aiMarkBtn" onclick="aiMark()">✦ Mark with AI</button><button class="secondary" onclick="mark()">Local mark</button><button class="secondary" onclick="clearAns()">Clear</button></div>${r?resultHTML(r,q,p):''}</section><aside class="sidebar"><div class="sideCard"><span class="tiny">PAPER</span><b>${p.title}</b><p>${p.code}</p>${p.id==='wbi11a-2601'?'<p class="paper-note">01A uses the same assessment questions as 01; Pearson supplies a separate Answer Book.</p>':''}</div><div class="sideCard"><span class="tiny">PROGRESS</span><b>${Object.keys(state.results).filter(k=>k.startsWith(p.id)).length} / ${qs.length} parts attempted</b></div><div class="sideCard"><span class="tiny">QUESTION</span><b>${state.qi+1} of ${qs.length}</b><p>This build starts clean. New answers save only on this device.</p></div><div class="ai-status"><span class="ai-dot ${aiKey()?'':'off'}"></span>${aiKey()?'AI examiner connected':'AI examiner not connected'}</div>${setupAI()}<a class="sideLink" href="${p.qp}" target="_blank">Open original question paper ↗</a></aside></div>`;setTimeout(()=>{if(drawingQuestions.has(q.n))initDrawing()},0)}
@@ -225,5 +236,5 @@ function mark(){let p=state.paper,q=qs[state.qi],key=p.id+'-'+state.qi,a=getAnsw
  else {details=q.scheme.map(x=>({ok:has(a,x[1]),text:x[0]}));score=details.filter(x=>x.ok).length;if(q.cap)score=Math.min(score,q.cap);score=Math.min(score,q.marks)}
  state.results[key]={score,details,answer:a,attemptedAt:Date.now()};persist();render();}
 function resultHTML(r,q,p){let full=r.score===q.marks;return `<div class="result"><div class="resultHead"><div><span class="tiny">MARK</span><div class="bigScore">${r.score}<small>/${q.marks}</small></div></div><div class="verdict ${full?'full':''}">${full?'Full marks':'Improve and retry'}</div></div><h3>Mark-scheme breakdown</h3>${r.details.map(d=>`<div class="point ${d.ok?'hit':'miss'}"><span>${d.ok?'✓':'×'}</span><div>${d.text}</div></div>`).join('')}${r.ai?`<div class="ai-feedback"><div class="ai-title">✦ AI examiner feedback</div><div class="ai-body"><h4>Feedback</h4><p>${esc(r.feedback)}</p><h4>Improved answer</h4><p>${esc(r.improved)}</p></div></div>`:''}${q.note?`<div class="guidance"><b>Examiner guidance</b><br>${q.note}</div>`:''}<div class="official-ms"><h3>Actual Pearson mark scheme</h3><p>This is the original mark-scheme page for this question.</p>${sourcePages(q,p,'ms')}</div><div class="post-actions"><button class="retry" onclick="document.querySelector('#ans')?.focus()">Edit answer & retry</button><button class="primary" onclick="nextQ()" ${state.qi===qs.length-1?'disabled':''}>Next question →</button></div></div>`}
-function clearAns(){let p=state.paper,key=p.id+'-'+state.qi;delete state.answers[key];delete state.results[key];persist();render()}
+function clearAns(){let p=state.paper,key=p.id+'-'+state.qi;delete state.answers[key];delete state.results[key];delete state.confidence[key];delete drawData[key];strokes=[];persist();render()}
 render();
