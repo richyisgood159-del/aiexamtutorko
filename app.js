@@ -20,7 +20,7 @@ const qs=[
  {n:'5(c)',marks:2,q:'Describe the relationship between the number of cigarettes smoked per day and the relative risk of CHD.',scheme:[['overall, more cigarettes smoked is associated with greater relative risk of CHD',['increase','positive correlation','greater risk']],['the relationship is non-linear',['non-linear','nonlinear']],['there is a relative risk of CHD even with no smoking',['no smoking','zero cigarettes','without smoking']]],cap:2},
  {n:'5(d)(i)',marks:1,q:'A person smoked 5 cigarettes a day for 12 years. Calculate the mean number of cigarettes smoked per year, using 365.25 days per year.',alts:['1826','1,826'],keys:['1826','1,826']},
  {n:'5(d)(ii)',marks:3,q:'Explain why this person’s perception of their risk of CHD is likely to be different from their actual risk.',scheme:[['may underestimate / misreport / not know the number of cigarettes smoked',['underestimate','under-estimate','lie','not know','misreport']],['may not smoke the same number every day',['same number','each day','every day','not everyday']],['may not know exactly how long they have smoked',['how long','years','duration']],['may not realise how important smoking is as a risk factor',['not realise','risk factor','awareness','education']]],cap:3},
- {n:'6(a)',marks:2,q:'Draw a triglyceride using the glycerol, fatty-acid and ester-bond shapes shown in the paper.',scheme:[['one glycerol, three fatty acids and three bonds are shown',['glycerol','three fatty','3 fatty','three bonds','3 bonds']],['all components are joined together correctly',['joined','attached','ester']]],note:'This is a drawing question. Draw directly on the canvas; AI vision checks the visible structure against the official marking points.'},
+ {n:'6(a)',marks:2,q:'Draw a triglyceride using the glycerol, fatty-acid and ester-bond shapes shown in the paper.',scheme:[['one glycerol, three fatty acids and three bonds are shown',['glycerol','three fatty','3 fatty','three bonds','3 bonds']],['all components are joined together correctly',['joined','attached','ester']]],note:'Drawing question: draw normally, then reveal the official Pearson mark scheme and self-mark. AI marking is intentionally disabled for diagrams.'},
  {n:'6(b)',marks:1,q:'Which row is correct for a saturated fatty acid?',type:'mcq',options:['A','B','C','D'],correct:'A'},
  {n:'6(c)(i)',marks:1,q:'Estimate the melting point of a saturated fatty acid with a chain length of ten carbons.',scheme:[['a whole-number estimate between 15 °C and 50 °C',['15','20','25','30','35','40','45','50']]]},
  {n:'6(c)(ii)',marks:4,q:'Comment on the relationships between fatty-acid melting point and carbon number, presence/absence of C=C bonds, and number of C=C bonds.',scheme:[['for saturated fatty acids, melting point increases as chain length / carbon number increases',['chain length','carbon','increase']],['the saturated fatty acids shown are liquid above the relevant temperature threshold',['saturated','liquid']],['no clear relationship between chain length and melting point for the unsaturated fatty acids shown',['unsaturated','no relationship','no correlation']],['saturated fatty acids have higher melting points than unsaturated fatty acids',['saturated','higher','unsaturated']],['melting point decreases as the number of C=C double bonds increases',['double bond','decrease']]],cap:4},
@@ -59,25 +59,29 @@ const visualMap={
 };
 const drawingQuestions=new Set(['6(a)']);
 const app=document.getElementById('app');
-const BUILD_ID='v8-reliable';
-const STORAGE_VERSION='v8session';
+const BUILD_ID='v9-examiner';
+const STORAGE_VERSION='v9fresh';
 const STATE_KEY='examTutorState_'+STORAGE_VERSION;
-// v8 deliberately keeps study progress in sessionStorage, not localStorage.
-// This prevents old answers from any previous GitHub Pages build/repository from reappearing.
+// v9 uses a brand-new store and performs a one-time hard reset of ALL older Exam Tutor progress.
+// The API key is preserved so the user does not need to reconnect it.
+const MIGRATION_KEY='examTutorMigration_v9';
 try{
-  const doomed=[];
-  for(let i=0;i<localStorage.length;i++){
-    const k=localStorage.key(i)||'';
-    if(k.startsWith('examTutor')) doomed.push(k);
+  if(sessionStorage.getItem(MIGRATION_KEY)!=='done'){
+    const keepKey=sessionStorage.getItem('examTutorOpenRouterKey')||'';
+    const ss=[]; for(let i=0;i<sessionStorage.length;i++){const k=sessionStorage.key(i)||'';if(k.startsWith('examTutor')&&k!=='examTutorOpenRouterKey')ss.push(k)}
+    ss.forEach(k=>sessionStorage.removeItem(k));
+    const ls=[]; for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i)||'';if(k.startsWith('examTutor'))ls.push(k)}
+    ls.forEach(k=>localStorage.removeItem(k));
+    if(keepKey)sessionStorage.setItem('examTutorOpenRouterKey',keepKey);
+    sessionStorage.setItem(MIGRATION_KEY,'done');
   }
-  doomed.forEach(k=>localStorage.removeItem(k));
 }catch(e){}
-const defaultState={view:'papers',paper:null,qi:0,answers:{},results:{},confidence:{}};
-let state={...defaultState};
+const defaultState={view:'papers',paper:null,qi:0,answers:{},results:{},confidence:{},attempts:{}};
+let state={...defaultState,answers:{},results:{},confidence:{},attempts:{}};
 try{
   const saved=JSON.parse(sessionStorage.getItem(STATE_KEY)||'null');
-  if(saved&&typeof saved==='object') state={...defaultState,...saved,answers:saved.answers||{},results:saved.results||{},confidence:saved.confidence||{}};
-}catch(e){ state={...defaultState}; }
+  if(saved&&typeof saved==='object') state={...defaultState,...saved,answers:saved.answers||{},results:saved.results||{},confidence:saved.confidence||{},attempts:saved.attempts||{}};
+}catch(e){ state={...defaultState,answers:{},results:{},confidence:{},attempts:{}}; }
 if(state.paper&&state.paper.id) state.paper=papers.find(p=>p.id===state.paper.id)||null;
 let drawData={};
 function persist(){try{sessionStorage.setItem(STATE_KEY,JSON.stringify({...state,paper:state.paper?{id:state.paper.id}:null}))}catch(e){}}
@@ -87,15 +91,15 @@ function openQ(i){state.qi=Math.max(0,Math.min(qs.length-1,Number(i)||0));state.
 function prevQ(){if(state.qi>0){state.qi--;persist();render()}}
 function nextQ(){if(state.qi<qs.length-1){state.qi++;persist();render()}}
 function setConfidence(v){let key=state.paper.id+'-'+state.qi;state.confidence[key]=v;persist();render()}
-function resetProgress(){if(!state.paper)return;let prefix=state.paper.id+'-';for(const k of Object.keys(state.answers))if(k.startsWith(prefix))delete state.answers[k];for(const k of Object.keys(state.results))if(k.startsWith(prefix))delete state.results[k];for(const k of Object.keys(state.confidence))if(k.startsWith(prefix))delete state.confidence[k];drawData={};strokes=[];persist();render()}
+function resetProgress(){if(!state.paper)return;let prefix=state.paper.id+'-';for(const k of Object.keys(state.answers))if(k.startsWith(prefix))delete state.answers[k];for(const k of Object.keys(state.results))if(k.startsWith(prefix))delete state.results[k];for(const k of Object.keys(state.confidence))if(k.startsWith(prefix))delete state.confidence[k];for(const k of Object.keys(state.attempts||{}))if(k.startsWith(prefix))delete state.attempts[k];drawData={};strokes=[];persist();render()}
 function resetEverything(){
-  state={...defaultState,answers:{},results:{},confidence:{}};drawData={};strokes=[];
+  state={...defaultState,answers:{},results:{},confidence:{},attempts:{}};drawData={};strokes=[];
   try{sessionStorage.removeItem(STATE_KEY)}catch(e){}
   persist();render();
 }
 function newCleanSession(){
   try{sessionStorage.removeItem(STATE_KEY)}catch(e){}
-  state={...defaultState,answers:{},results:{},confidence:{}};drawData={};strokes=[];persist();render();
+  state={...defaultState,answers:{},results:{},confidence:{},attempts:{}};drawData={};strokes=[];persist();render();
 }
 function aiKey(){return sessionStorage.getItem('examTutorOpenRouterKey')||''}
 function saveAiKey(){let e=document.getElementById('aiKey'),v=(e?.value||'').trim();if(!v)return alert('Paste your OpenRouter API key first.');sessionStorage.setItem('examTutorOpenRouterKey',v);render()}
@@ -138,7 +142,7 @@ function undoDraw(){strokes.pop();saveDrawing();redraw()}function clearDrawing()
 function drawingStats(){let pts=strokes.reduce((n,s)=>n+s.length,0),len=0,minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;for(const st of strokes){for(let i=0;i<st.length;i++){let [x,y]=st[i];minX=Math.min(minX,x);minY=Math.min(minY,y);maxX=Math.max(maxX,x);maxY=Math.max(maxY,y);if(i){let [px,py]=st[i-1];len+=Math.hypot(x-px,y-py)}}}return {strokes:strokes.length,pts,len,bbox:(isFinite(minX)?[minX,minY,maxX,maxY]:null)};}
 function validDrawingAttempt(){let d=drawingStats();return d.strokes>=2 && d.pts>=8 && d.len>=45;}
 function canvasDataUrl(){let d=drawingStats();if(!d.bbox)return null;let [minX,minY,maxX,maxY]=d.bbox,pad=28;minX=Math.max(0,minX-pad);minY=Math.max(0,minY-pad);maxX+=pad;maxY+=pad;let w=Math.max(1,maxX-minX),h=Math.max(1,maxY-minY),scale=Math.min(1,384/Math.max(w,h));let out=document.createElement('canvas');out.width=Math.max(1,Math.round(w*scale));out.height=Math.max(1,Math.round(h*scale));let x=out.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,out.width,out.height);x.strokeStyle='#111';x.lineWidth=Math.max(2,3*scale);x.lineCap='round';x.lineJoin='round';for(const st of strokes){if(st.length<1)continue;x.beginPath();x.moveTo((st[0][0]-minX)*scale,(st[0][1]-minY)*scale);for(let i=1;i<st.length;i++)x.lineTo((st[i][0]-minX)*scale,(st[i][1]-minY)*scale);x.stroke()}return out.toDataURL('image/jpeg',0.68)}
-function setupAI(){let existing=aiKey();return `<div class="ai-setup"><b>AI examiner setup</b><p class="ai-note">Connect an OpenRouter key to turn on semantic AI marking. The key is kept only in this browser tab/session in this prototype and is not included in the downloaded project.</p><input id="aiKey" type="password" autocomplete="off" placeholder="OpenRouter API key" value="${esc(existing)}"><button class="secondary" onclick="saveAiKey()">${existing?'Update key':'Connect AI'}</button>${existing?` <button class="danger-link" onclick="removeAiKey()">Disconnect</button>`:''}</div>`}
+function setupAI(){let existing=aiKey();return `<div class="ai-setup"><b>AI examiner setup</b><p class="ai-note">Connect an OpenRouter key for written-answer examiner marking. Drawing questions never use AI. The key is kept only in this browser tab/session in this prototype and is not included in the downloaded project.</p><input id="aiKey" type="password" autocomplete="off" placeholder="OpenRouter API key" value="${esc(existing)}"><button class="secondary" onclick="saveAiKey()">${existing?'Update key':'Connect AI'}</button>${existing?` <button class="danger-link" onclick="removeAiKey()">Disconnect</button>`:''}</div>`}
 function schemeText(q){if(q.type==='mcq')return `Correct option: ${q.correct}.`;if(q.groups)return q.groups.map((g,i)=>`Accepted route ${i+1}: ${g.map(x=>x[0]).join(' | ')}`).join('\n');if(q.alts)return `Accept one of: ${q.alts.join('; ')}`;return (q.scheme||[]).map((x,i)=>`${i+1}. ${x[0]}`).join('\n')+(q.cap?`\nMaximum ${q.cap} marks.`:'')+(q.note?`\nExaminer guidance: ${q.note}`:'')}
 function extractTextContent(content){
  if(typeof content==='string')return content;
@@ -176,74 +180,67 @@ function parseWrittenReply(raw,max){
 }
 async function aiMark(){
  const p=state.paper,q=qs[state.qi],key=p.id+'-'+state.qi,a=getAnswer(q,key);
- if(!a)return alert('Write, select, or draw an answer first.');
- // Questions with a completely objective answer are marked locally: faster and more reliable than an LLM.
+ if(drawingQuestions.has(q.n))return showDrawingScheme();
+ if(!a)return alert('Write or select an answer first.');
+ // Objective questions are deterministic and instant.
  if(q.type==='mcq'||q.alts||q.keys){mark();return;}
  if(q.n==='6(c)(i)'){
-   const n=Number(String(a).replace(/[^0-9.\-]/g,''));
-   const ok=Number.isInteger(n)&&n>=15&&n<=50;
-   state.answers[key]=a;state.results[key]={score:ok?1:0,details:[{ok,text:ok?'Whole-number estimate is within the Pearson accepted range (15–50 °C).':'Pearson accepts a whole-number estimate from 15 °C to 50 °C.'}],answer:a,ai:false,feedback:ok?'Accepted.':'Check the graph and give a whole-number estimate in the accepted range.',improved:ok?a:'Any whole number from 15 °C to 50 °C.',attemptedAt:Date.now()};persist();render();return;
+   const n=Number(String(a).replace(/[^0-9.\-]/g,'')); const ok=Number.isInteger(n)&&n>=15&&n<=50;
+   state.answers[key]=a;state.results[key]={score:ok?1:0,details:[{ok,text:ok?'Accepted: whole-number estimate is within the Pearson 15–50 °C range.':'Pearson accepts a whole-number estimate from 15 °C to 50 °C.'}],answer:a,ai:false,feedback:ok?'Your value is within the accepted range.':'Re-read the graph scale and give a whole-number estimate in the accepted range.',improved:ok?a:'A whole-number estimate between 15 °C and 50 °C.',attemptedAt:Date.now()};persist();render();return;
  }
- const isDrawing=drawingQuestions.has(q.n);
- if(isDrawing&&!validDrawingAttempt())return alert('There is not enough of a drawing to mark yet. Add the complete structure first.');
  const token=aiKey(); if(!token)return alert('Connect your OpenRouter key in AI examiner setup first.');
- if(!isDrawing){state.answers[key]=a;persist();}
- const btn=document.querySelector('#aiMarkBtn'); if(btn){btn.disabled=true;btn.textContent='Marking…'}
+ state.answers[key]=a; state.attempts[key]=(state.attempts[key]||0)+1; persist();
+ const btn=document.querySelector('#aiMarkBtn'); if(btn){btn.disabled=true;btn.textContent='Examiner marking…'}
  const endpoint=(window.EXAM_TUTOR_AI||{}).endpoint||'https://openrouter.ai/api/v1/chat/completions';
- const levelRule=q.level?`\nThis is a 6-mark level-of-response item. Apply a holistic Pearson-style level judgement: 1-2 = limited/simple points; 3-4 = some linked explanation across relevant aspects; 5-6 = detailed, sustained, logically linked explanation across most/all required aspects. Do not award 5-6 for disconnected keyword lists.`:'';
- const prompt=isDrawing
- ? `Act as a strict Pearson Edexcel IAL Biology examiner. Inspect ONLY the student's drawing. Question ${q.n}, ${q.marks} marks.\nOFFICIAL MARKING POINTS:\n1. one glycerol, three fatty acids and three bonds shown = 1 mark.\n2. all components joined together correctly = 1 mark.\nIgnore relative sizes. Apply error-carried-forward where the official scheme permits one/two fatty acids attached to glycerol.\nA random line, scribble, unrelated shape, or structure you cannot clearly verify must score 0. Never guess hidden chemistry.\nReturn EXACTLY:\nSCORE: 0, 1, or 2\nM1: YES or NO\nM1_EVIDENCE: what is visibly present\nM2: YES or NO\nM2_EVIDENCE: what is visibly present\nFEEDBACK: one concise sentence\nIMPROVED: one concise sentence`
- : `Act as a strict Pearson Edexcel International A Level Biology examiner. Mark positively but ONLY against the supplied question-specific Pearson guidance. Accept scientifically equivalent wording where the scheme allows it. Do not award marks for vague statements that do not satisfy a marking point. Never invent extra marking points. Respect caps and dependencies.\nQUESTION ${q.n} (${q.marks} marks): ${q.q}\nOFFICIAL MARKING GUIDANCE: ${schemeText(q)}${q.note?'\nADDITIONAL GUIDANCE: '+q.note:''}${levelRule}\nSTUDENT ANSWER: ${a}\nReturn EXACTLY these lines:\nSCORE: integer 0-${q.marks}\nAWARDED: each credited marking point, separated by |\nMISSED: each uncredited marking point, separated by |\nFEEDBACK: one concise examiner sentence explaining the score\nIMPROVED: a concise answer that would earn full marks`;
- let userContent=prompt;
- if(isDrawing){const img=canvasDataUrl();userContent=[{type:'text',text:prompt},{type:'image_url',image_url:{url:img}}]}
- // Current free models chosen for explicit capability rather than random routing.
- const candidates=isDrawing
-   ? ['inclusionai/ling-3.0-flash-vl:free','thinkingmachines/inkling:free','openrouter/free']
-   : ['inclusionai/ling-3.0-flash:free','dots-studio/dots-3-note-preview:free','openrouter/free'];
+ const levelRule=q.level?`\nLEVEL-OF-RESPONSE RULES: This is 6 marks. Use Pearson's holistic level approach, not keyword counting. Level 1 (1–2): limited/simple points. Level 2 (3–4): explanation with some analysis/links across relevant aspects. Level 3 (5–6): detailed, sustained, logically linked scientific reasoning across most/all relevant aspects. 5 marks requires strong coverage with developed explanation; 6 requires the strongest complete explanation.`:'';
+ const prompt=`You are a strict Pearson Edexcel International A Level Biology examiner. Mark ONLY against the official question-specific guidance below. Apply positive marking, but NEVER award a mark because an answer merely sounds scientifically plausible. Every awarded mark must map to an official marking point. Accept equivalent wording only where it expresses the same scientific idea. Respect caps, dependencies, ACCEPT/IGNORE/DO NOT ACCEPT guidance, units, rounding and ECF when stated. If a statement is vague, contradictory, or does not complete the required link, do not award that point.\n\nQUESTION ${q.n} (${q.marks} marks):\n${q.q}\n\nOFFICIAL PEARSON GUIDANCE:\n${schemeText(q)}${levelRule}\n\nSTUDENT ANSWER:\n${a}\n\nGive deep but concise feedback. Return EXACTLY these labelled sections (one line per label; use | between multiple items):\nSCORE: integer 0-${q.marks}\nAWARDED: for each mark, state the exact idea in the student's answer that earned it and the Pearson point it matches\nMISSED: each Pearson point still needed for full marks\nWHY: explain precisely why any tempting/vague statements did not earn marks; write None if not applicable\nNEXT: the single most important improvement for the student's next attempt\nIMPROVED: a concise full-mark exam answer using only material supported by the supplied Pearson guidance`;
+ const candidates=['nvidia/nemotron-3-ultra-550b-a55b:free','openrouter/free'];
+ function parse(raw){
+   const t=extractTextContent(raw).trim(); if(!t)return null;
+   const sv=lineValue(t,'SCORE'); const n=Number((sv.match(/\d+(?:\.\d+)?/)||[])[0]); if(!Number.isFinite(n))return null;
+   const split=v=>String(v||'').split(/\s*\|\s*/).map(x=>x.trim()).filter(Boolean).filter(x=>!/^(none|n\/a)$/i.test(x));
+   return {score:Math.max(0,Math.min(q.marks,Math.round(n))),awarded:split(lineValue(t,'AWARDED')),missed:split(lineValue(t,'MISSED')),why:lineValue(t,'WHY'),next:lineValue(t,'NEXT'),feedback:lineValue(t,'WHY')||lineValue(t,'NEXT'),improved_answer:lineValue(t,'IMPROVED')};
+ }
  async function attempt(model,timeoutMs){
    const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),timeoutMs);
    try{
-     const body={model,temperature:0,max_tokens:isDrawing?220:420,messages:[{role:'user',content:userContent}]};
+     const body={model,temperature:0,max_tokens:900,messages:[{role:'user',content:prompt}]};
      const res=await fetch(endpoint,{method:'POST',signal:controller.signal,headers:{Authorization:'Bearer '+token,'Content-Type':'application/json','HTTP-Referer':location.origin,'X-Title':'Private Exam Tutor'},body:JSON.stringify(body)});
-     const rawBody=await res.text();
-     if(!res.ok){let msg=`OpenRouter ${res.status}`;try{msg=JSON.parse(rawBody)?.error?.message||msg}catch(_){}throw new Error(msg)}
+     const rawBody=await res.text(); if(!res.ok){let msg=`OpenRouter ${res.status}`;try{msg=JSON.parse(rawBody)?.error?.message||msg}catch(_){}throw new Error(msg)}
      let data;try{data=JSON.parse(rawBody)}catch(_){throw new Error('Unreadable API response')}
-     const raw=data?.choices?.[0]?.message?.content;
-     const parsed=isDrawing?parseDrawingReply(raw):parseWrittenReply(raw,q.marks);
-     if(!parsed)throw new Error('Model returned no usable examiner result');
-     return parsed;
+     const parsed=parse(data?.choices?.[0]?.message?.content); if(!parsed)throw new Error('Examiner returned an incomplete response'); return parsed;
    }finally{clearTimeout(timer)}
  }
  try{
-   let j=null,lastErr=null;
-   for(let i=0;i<candidates.length;i++){
-     try{if(btn)btn.textContent=i===0?'Marking…':`Retry ${i+1}/${candidates.length}…`;j=await attempt(candidates[i],i===0?18000:16000);break}catch(e){lastErr=e}
-   }
-   if(!j)throw lastErr||new Error('No free examiner was available');
-   let details,score;
-   if(isDrawing){details=j.criteria.map(c=>({ok:c.met===true,text:`${c.criterion} — ${c.visible_evidence||'No clear visible evidence.'}`}));score=Math.max(0,Math.min(q.marks,j.score));}
-   else{score=j.score;details=[...j.awarded.map(x=>({ok:true,text:x})),...j.missed.map(x=>({ok:false,text:x}))];}
-   state.results[key]={score,details,answer:a,ai:true,feedback:String(j.feedback||''),improved:String(j.improved_answer||''),attemptedAt:Date.now()};persist();render();
- }catch(e){
-   if(btn){btn.disabled=false;btn.textContent='✦ Mark with AI'}
-   const msg=e?.name==='AbortError'?'The free examiner timed out.':(e?.message||'The free examiner was unavailable.');
-   alert('The free AI examiner could not return a reliable mark. No mark was saved.\n\n'+msg+'\n\nYour answer is still on this page.');
- }
+   let j=null,lastErr=null; for(let i=0;i<candidates.length;i++){try{if(btn)btn.textContent=i?'Using backup examiner…':'Examiner marking…';j=await attempt(candidates[i],i?24000:30000);break}catch(e){lastErr=e}}
+   if(!j)throw lastErr||new Error('No examiner available');
+   const details=[...j.awarded.map(x=>({ok:true,text:x})),...j.missed.map(x=>({ok:false,text:x}))];
+   state.results[key]={score:j.score,details,answer:a,ai:true,feedback:j.feedback||'',why:j.why||'',next:j.next||'',improved:String(j.improved_answer||''),attempt:state.attempts[key],attemptedAt:Date.now()};persist();render();
+ }catch(e){if(btn){btn.disabled=false;btn.textContent='✦ Mark written answer'};const msg=e?.name==='AbortError'?'The free examiner timed out.':(e?.message||'The free examiner was unavailable.');alert('Written marking could not complete. No mark was saved.\n\n'+msg+'\n\nYour answer is still on the page, so you can retry.');}
+}
+function showDrawingScheme(){
+ const p=state.paper,q=qs[state.qi],key=p.id+'-'+state.qi; saveDrawing();
+ if(!(drawData[key]||[]).length)return alert('Draw your answer first.');
+ const box=document.getElementById('drawingSelfMark'); if(box){box.hidden=false;box.scrollIntoView({behavior:'smooth',block:'nearest'});}
+}
+function selfMarkDrawing(score){
+ const p=state.paper,q=qs[state.qi],key=p.id+'-'+state.qi; score=Math.max(0,Math.min(q.marks,Number(score)||0));
+ state.results[key]={score,details:q.scheme.map((x,i)=>({ok:i<score,text:x[0]})),answer:'[DRAWING SELF-MARKED]',selfMarked:true,attemptedAt:Date.now()};persist();render();
 }
 
 function render(){ if(state.view==='papers') papersView(); else if(state.view==='questions') questionList(); else viewer(); }
-function papersView(){app.innerHTML=`<div class="hero"><div><span class="eyebrow">YOUR STUDY STACKS · v8 RELIABLE</span><h1>What do you want to practise?</h1><p>Exam questions, instant marking and feedback from the official Pearson mark scheme.</p></div><div class="stat"><b>2</b><span>active stacks</span></div></div><div class="sectionTitle"><div><h2>Biology · Unit 1</h2><p>Molecules, Diet, Transport and Health</p></div></div><div class="paperGrid">${papers.map(p=>`<article class="paperCard" onclick="openPaper('${p.id}')"><div class="paperTop"><span class="subjectBadge">BIOLOGY</span><span class="ready">● Ready</span></div><h3>${p.title}</h3><p>${p.code}</p>${p.id==='wbi11a-2601'?'<p class="paper-note">01A uses the same assessment questions as 01; Pearson supplies a separate Answer Book.</p>':''}<div class="paperMeta"><span>${p.time}</span><span>${p.marks} marks</span></div><button class="primary">Open stack →</button></article>`).join('')}</div><div class="notice"><b>Marking source:</b> the supplied Pearson mark schemes. All questions from the January 2026 Unit 1 paper are now included. The original PDFs remain available inside each paper.</div>`}
+function papersView(){app.innerHTML=`<div class="hero"><div><span class="eyebrow">YOUR STUDY STACKS · v9 EXAMINER</span><h1>What do you want to practise?</h1><p>Exam questions with strict Pearson-based written marking, calculation checks and deep feedback.</p></div><div class="stat"><b>2</b><span>active stacks</span></div></div><div class="sectionTitle"><div><h2>Biology · Unit 1</h2><p>Molecules, Diet, Transport and Health</p></div></div><div class="paperGrid">${papers.map(p=>`<article class="paperCard" onclick="openPaper('${p.id}')"><div class="paperTop"><span class="subjectBadge">BIOLOGY</span><span class="ready">● Ready</span></div><h3>${p.title}</h3><p>${p.code}</p>${p.id==='wbi11a-2601'?'<p class="paper-note">01A uses the same assessment questions as 01; Pearson supplies a separate Answer Book.</p>':''}<div class="paperMeta"><span>${p.time}</span><span>${p.marks} marks</span></div><button class="primary">Open stack →</button></article>`).join('')}</div><div class="notice"><b>Marking source:</b> the supplied Pearson mark schemes. All questions from the January 2026 Unit 1 paper are now included. The original PDFs remain available inside each paper.</div>`}
 function questionList(){let p=state.paper;app.innerHTML=`<button class="back" onclick="go('papers')">← Papers</button><div class="paperHeader"><div><span class="subjectBadge">BIOLOGY</span><h1>${p.title}</h1><p>${p.code} · ${p.time} · ${p.marks} marks</p></div><div class="pdfBtns"><a href="${p.qp}" target="_blank">Question paper ↗</a><a href="${p.ms}" target="_blank">Mark scheme ↗</a></div></div><div class="paper-tools"><span>${Object.keys(state.results).filter(k=>k.startsWith(p.id)).length} / ${qs.length} parts attempted</span><button class="secondary" onclick="resetProgress()">Reset paper progress</button> <button class="secondary" onclick="newCleanSession()">New clean session</button></div><div class="questionList">${qs.map((q,i)=>{let r=state.results[p.id+'-'+i],c=state.confidence[p.id+'-'+i];return `<div class="qrow" onclick="openQ(${i})"><div class="qnum">${q.n}</div><div class="grow"><b>${q.q}</b><span>${q.marks} mark${q.marks>1?'s':''}${c?' · confidence: '+c:''}</span></div>${r?`<div class="miniScore">${r.score}/${q.marks}</div>`:'<div class="unattempted">Not attempted</div>'}<div class="chev">›</div></div>`}).join('')}</div>`}
 function answerUI(q,key){if(drawingQuestions.has(q.n))return drawingUI(key);if(q.type==='mcq')return `<div class="choices">${q.options.map(o=>`<label><input type="radio" name="mcq" value="${o[0]}" ${state.answers[key]===o[0]?'checked':''}> <span>${o}</span></label>`).join('')}</div>`;return `<textarea id="ans" class="answer" placeholder="Write your exam answer here...">${esc(state.answers[key]||'')}</textarea>`}
-function viewer(){let p=state.paper,q=qs[state.qi],key=p.id+'-'+state.qi,r=state.results[key];app.innerHTML=`<div class="viewer-nav"><button class="back" onclick="state.view='questions';persist();render()">← Questions</button><div><button class="secondary" onclick="prevQ()" ${state.qi===0?'disabled':''}>← Previous</button> <button class="secondary" onclick="nextQ()" ${state.qi===qs.length-1?'disabled':''}>Next →</button></div></div><div class="viewer"><section class="exam"><div class="examBar"><span>${p.code}</span><b>${q.marks} MARK${q.marks>1?'S':''}</b></div><div class="qn">Question ${q.n}</div><div class="source-title"><b>Actual exam question</b><span>Shown directly from your Pearson paper so every diagram, graph, table and photo stays intact.</span></div><div class="source-pages">${sourcePages(q,p,'qp')}</div><details class="typed-question"><summary>Text version</summary><div class="questionText">${q.q}</div></details>${answerUI(q,key)}<div class="confidence"><span>How confident are you?</span>${['Low','Medium','High'].map(v=>`<button data-v="${v}" class="${state.confidence[key]===v?'active':''}" onclick="setConfidence('${v}')">${v}</button>`).join('')}</div><div class="actions"><button class="primary" id="aiMarkBtn" onclick="aiMark()">✦ Mark with AI</button><button class="secondary" onclick="mark()">Local mark</button><button class="secondary" onclick="clearAns()">Clear</button></div>${r?resultHTML(r,q,p):''}</section><aside class="sidebar"><div class="sideCard"><span class="tiny">PAPER</span><b>${p.title}</b><p>${p.code}</p>${p.id==='wbi11a-2601'?'<p class="paper-note">01A uses the same assessment questions as 01; Pearson supplies a separate Answer Book.</p>':''}</div><div class="sideCard"><span class="tiny">PROGRESS</span><b>${Object.keys(state.results).filter(k=>k.startsWith(p.id)).length} / ${qs.length} parts attempted</b></div><div class="sideCard"><span class="tiny">QUESTION</span><b>${state.qi+1} of ${qs.length}</b><p>This tab starts clean. Progress is session-only, so old builds cannot restore previous answers.</p></div><div class="ai-status"><span class="ai-dot ${aiKey()?'':'off'}"></span>${aiKey()?'AI examiner connected':'AI examiner not connected'}</div>${setupAI()}<a class="sideLink" href="${p.qp}" target="_blank">Open original question paper ↗</a></aside></div>`;setTimeout(()=>{if(drawingQuestions.has(q.n))initDrawing()},0)}
+function viewer(){let p=state.paper,q=qs[state.qi],key=p.id+'-'+state.qi,r=state.results[key];app.innerHTML=`<div class="viewer-nav"><button class="back" onclick="state.view='questions';persist();render()">← Questions</button><div><button class="secondary" onclick="prevQ()" ${state.qi===0?'disabled':''}>← Previous</button> <button class="secondary" onclick="nextQ()" ${state.qi===qs.length-1?'disabled':''}>Next →</button></div></div><div class="viewer"><section class="exam"><div class="examBar"><span>${p.code}</span><b>${q.marks} MARK${q.marks>1?'S':''}</b></div><div class="qn">Question ${q.n}</div><div class="source-title"><b>Actual exam question</b><span>Shown directly from your Pearson paper so every diagram, graph, table and photo stays intact.</span></div><div class="source-pages">${sourcePages(q,p,'qp')}</div><details class="typed-question"><summary>Text version</summary><div class="questionText">${q.q}</div></details>${answerUI(q,key)}<div class="confidence"><span>How confident are you?</span>${['Low','Medium','High'].map(v=>`<button data-v="${v}" class="${state.confidence[key]===v?'active':''}" onclick="setConfidence('${v}')">${v}</button>`).join('')}</div><div class="actions">${drawingQuestions.has(q.n)?'<button class="primary" onclick="showDrawingScheme()">Show mark scheme & self-mark</button>':'<button class="primary" id="aiMarkBtn" onclick="aiMark()">✦ Mark written answer</button><button class="secondary" onclick="mark()">Quick local check</button>'}<button class="secondary" onclick="clearAns()">Clear</button></div>${drawingQuestions.has(q.n)?`<div id="drawingSelfMark" class="result" hidden><h3>Self-mark this drawing</h3><p>Compare your drawing with the official Pearson mark scheme below. AI is deliberately disabled for drawing questions.</p><div class="official-ms">${sourcePages(q,p,'ms')}</div><p><b>Official points:</b><br>1 mark — one glycerol, three fatty acids and three bonds shown.<br>1 mark — all components joined together correctly.</p><div class="actions"><button class="secondary" onclick="selfMarkDrawing(0)">0 / 2</button><button class="secondary" onclick="selfMarkDrawing(1)">1 / 2</button><button class="primary" onclick="selfMarkDrawing(2)">2 / 2</button></div></div>`:''}${r?resultHTML(r,q,p):''}</section><aside class="sidebar"><div class="sideCard"><span class="tiny">PAPER</span><b>${p.title}</b><p>${p.code}</p>${p.id==='wbi11a-2601'?'<p class="paper-note">01A uses the same assessment questions as 01; Pearson supplies a separate Answer Book.</p>':''}</div><div class="sideCard"><span class="tiny">PROGRESS</span><b>${Object.keys(state.results).filter(k=>k.startsWith(p.id)).length} / ${qs.length} parts attempted</b></div><div class="sideCard"><span class="tiny">QUESTION</span><b>${state.qi+1} of ${qs.length}</b><p>v9 starts with a clean progress store. Written answers are marked against the supplied Pearson guidance; drawings are self-marked.</p></div><div class="ai-status"><span class="ai-dot ${aiKey()?'':'off'}"></span>${aiKey()?'AI examiner connected':'AI examiner not connected'}</div>${setupAI()}<a class="sideLink" href="${p.qp}" target="_blank">Open original question paper ↗</a></aside></div>`;setTimeout(()=>{if(drawingQuestions.has(q.n))initDrawing()},0)}
 function getAnswer(q,key){if(drawingQuestions.has(q.n)){saveDrawing();let hasInk=(drawData[key]||[]).length>0;return hasInk?'[DRAWING SUBMITTED]':''}if(q.type==='mcq'){let e=document.querySelector('input[name=mcq]:checked');return e?e.value:''}return document.querySelector('#ans')?.value.trim()||''}
 function has(a,keys){a=a.toLowerCase().replace(/[–—]/g,'-');return keys.some(k=>a.includes(k))}
-function mark(){let p=state.paper,q=qs[state.qi],key=p.id+'-'+state.qi,a=getAnswer(q,key);if(!a)return alert('Write or select an answer first.');if(drawingQuestions.has(q.n))return alert('Drawing questions are vision-marked only. Local keyword marking is disabled because it cannot inspect your diagram.');state.answers[key]=a;let score=0,details=[];
+function mark(){let p=state.paper,q=qs[state.qi],key=p.id+'-'+state.qi,a=getAnswer(q,key);if(!a)return alert('Write or select an answer first.');if(drawingQuestions.has(q.n))return showDrawingScheme();state.answers[key]=a;let score=0,details=[];
  if(q.type==='mcq'){score=a===q.correct?1:0;details=[{ok:score===1,text:score?'Correct answer.':`The credited answer is ${q.correct}.`}];}
  else if(q.groups){let best=[];for(const g of q.groups){let d=g.map(x=>({ok:has(a,x[1]),text:x[0]}));if(d.filter(x=>x.ok).length>best.filter(x=>x.ok).length)best=d}score=best.filter(x=>x.ok).length;details=best;}
  else if(q.alts){let ok=has(a,q.keys);score=ok?1:0;details=[{ok,text:ok?'Creditable answer.':`Credit requires one of: ${q.alts.join('; ')}.`}];}
  else {details=q.scheme.map(x=>({ok:has(a,x[1]),text:x[0]}));score=details.filter(x=>x.ok).length;if(q.cap)score=Math.min(score,q.cap);score=Math.min(score,q.marks)}
  state.results[key]={score,details,answer:a,attemptedAt:Date.now()};persist();render();}
-function resultHTML(r,q,p){let full=r.score===q.marks;return `<div class="result"><div class="resultHead"><div><span class="tiny">MARK</span><div class="bigScore">${r.score}<small>/${q.marks}</small></div></div><div class="verdict ${full?'full':''}">${full?'Full marks':'Improve and retry'}</div></div><h3>Mark-scheme breakdown</h3>${r.details.map(d=>`<div class="point ${d.ok?'hit':'miss'}"><span>${d.ok?'✓':'×'}</span><div>${d.text}</div></div>`).join('')}${r.ai?`<div class="ai-feedback"><div class="ai-title">✦ AI examiner feedback</div><div class="ai-body"><h4>Feedback</h4><p>${esc(r.feedback)}</p><h4>Improved answer</h4><p>${esc(r.improved)}</p></div></div>`:''}${q.note?`<div class="guidance"><b>Examiner guidance</b><br>${q.note}</div>`:''}<div class="official-ms"><h3>Actual Pearson mark scheme</h3><p>This is the original mark-scheme page for this question.</p>${sourcePages(q,p,'ms')}</div><div class="post-actions"><button class="retry" onclick="document.querySelector('#ans')?.focus()">Edit answer & retry</button><button class="primary" onclick="nextQ()" ${state.qi===qs.length-1?'disabled':''}>Next question →</button></div></div>`}
+function resultHTML(r,q,p){let full=r.score===q.marks;return `<div class="result"><div class="resultHead"><div><span class="tiny">MARK</span><div class="bigScore">${r.score}<small>/${q.marks}</small></div></div><div class="verdict ${full?'full':''}">${full?'Full marks':'Improve and retry'}</div></div><h3>${r.selfMarked?'Self-mark record':'Pearson mark-scheme breakdown'}</h3>${r.details.map(d=>`<div class="point ${d.ok?'hit':'miss'}"><span>${d.ok?'✓':'×'}</span><div>${esc(d.text)}</div></div>`).join('')}${r.ai?`<div class="ai-feedback"><div class="ai-title">✦ Strict examiner feedback · Attempt ${r.attempt||1}</div><div class="ai-body">${r.why?`<h4>Why marks were lost</h4><p>${esc(r.why)}</p>`:''}${r.next?`<h4>Highest-priority improvement</h4><p>${esc(r.next)}</p>`:''}<h4>Full-mark version</h4><p>${esc(r.improved)}</p><p class="ai-note">The AI is constrained to the supplied Pearson guidance; the original mark scheme below remains the final reference.</p></div></div>`:''}${q.note?`<div class="guidance"><b>Examiner guidance</b><br>${q.note}</div>`:''}<div class="official-ms"><h3>Actual Pearson mark scheme</h3><p>Original mark-scheme extract for this question.</p>${sourcePages(q,p,'ms')}</div><div class="post-actions"><button class="retry" onclick="document.querySelector('#ans')?.focus()">Edit answer & retry</button><button class="primary" onclick="nextQ()" ${state.qi===qs.length-1?'disabled':''}>Next question →</button></div></div>`}
 function clearAns(){let p=state.paper,key=p.id+'-'+state.qi;delete state.answers[key];delete state.results[key];delete state.confidence[key];delete drawData[key];strokes=[];persist();render()}
 render();
