@@ -2,5 +2,5 @@
 window.EXAM_TUTOR_AI = {
   provider: 'openrouter',
   endpoint: 'https://openrouter.ai/api/v1/chat/completions',
-  model: 'inclusionai/ling-3.0-flash-vl:free'
+  model: 'qwen/qwen3.8-27b:free'
 };
