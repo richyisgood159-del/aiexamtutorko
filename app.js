@@ -59,8 +59,8 @@ const visualMap={
 };
 const drawingQuestions=new Set(['6(a)']);
 const app=document.getElementById('app');
-const STORAGE_VERSION='v64fresh';
-const CLEANUP_FLAG='examTutorCleanup_v64';
+const STORAGE_VERSION='v65fresh';
+const CLEANUP_FLAG='examTutorCleanup_v65';
 try{if(!localStorage.getItem(CLEANUP_FLAG)){for(let i=localStorage.length-1;i>=0;i--){let k=localStorage.key(i)||'';if(k.startsWith('examTutorState_')||k.startsWith('examTutorDrawings_')||k.startsWith('examTutorBuilder_'))localStorage.removeItem(k)}localStorage.setItem(CLEANUP_FLAG,'1')}}catch(e){}
 const STATE_KEY='examTutorState_'+STORAGE_VERSION;
 const DRAW_KEY='examTutorDrawings_'+STORAGE_VERSION;
@@ -126,47 +126,81 @@ function validDrawingAttempt(){let d=drawingStats();return d.strokes>=2 && d.pts
 function canvasDataUrl(){let d=drawingStats();if(!d.bbox)return null;let [minX,minY,maxX,maxY]=d.bbox,pad=28;minX=Math.max(0,minX-pad);minY=Math.max(0,minY-pad);maxX+=pad;maxY+=pad;let w=Math.max(1,maxX-minX),h=Math.max(1,maxY-minY),scale=Math.min(1,384/Math.max(w,h));let out=document.createElement('canvas');out.width=Math.max(1,Math.round(w*scale));out.height=Math.max(1,Math.round(h*scale));let x=out.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,out.width,out.height);x.strokeStyle='#111';x.lineWidth=Math.max(2,3*scale);x.lineCap='round';x.lineJoin='round';for(const st of strokes){if(st.length<1)continue;x.beginPath();x.moveTo((st[0][0]-minX)*scale,(st[0][1]-minY)*scale);for(let i=1;i<st.length;i++)x.lineTo((st[i][0]-minX)*scale,(st[i][1]-minY)*scale);x.stroke()}return out.toDataURL('image/jpeg',0.68)}
 function setupAI(){let existing=aiKey();return `<div class="ai-setup"><b>AI examiner setup</b><p class="ai-note">Connect an OpenRouter key to turn on semantic AI marking. The key is kept only in this browser tab/session in this prototype and is not included in the downloaded project.</p><input id="aiKey" type="password" autocomplete="off" placeholder="OpenRouter API key" value="${esc(existing)}"><button class="secondary" onclick="saveAiKey()">${existing?'Update key':'Connect AI'}</button>${existing?` <button class="danger-link" onclick="removeAiKey()">Disconnect</button>`:''}</div>`}
 function schemeText(q){if(q.type==='mcq')return `Correct option: ${q.correct}.`;if(q.groups)return q.groups.map((g,i)=>`Accepted route ${i+1}: ${g.map(x=>x[0]).join(' | ')}`).join('\n');if(q.alts)return `Accept one of: ${q.alts.join('; ')}`;return (q.scheme||[]).map((x,i)=>`${i+1}. ${x[0]}`).join('\n')+(q.cap?`\nMaximum ${q.cap} marks.`:'')+(q.note?`\nExaminer guidance: ${q.note}`:'')}
-function parseAIJson(raw){let t=String(raw||'').trim().replace(/^```(?:json)?/i,'').replace(/```$/,'').trim();let a=t.indexOf('{'),b=t.lastIndexOf('}');if(a>=0&&b>a)t=t.slice(a,b+1);return JSON.parse(t)}
-function canvasDataUrl(){let d=drawingStats();if(!d.bbox)return null;let [minX,minY,maxX,maxY]=d.bbox,pad=28;minX=Math.max(0,minX-pad);minY=Math.max(0,minY-pad);maxX+=pad;maxY+=pad;let w=Math.max(1,maxX-minX),h=Math.max(1,maxY-minY),scale=Math.min(1,384/Math.max(w,h));let out=document.createElement('canvas');out.width=Math.max(1,Math.round(w*scale));out.height=Math.max(1,Math.round(h*scale));let x=out.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,out.width,out.height);x.strokeStyle='#111';x.lineWidth=Math.max(2,3*scale);x.lineCap='round';x.lineJoin='round';for(const st of strokes){if(st.length<1)continue;x.beginPath();x.moveTo((st[0][0]-minX)*scale,(st[0][1]-minY)*scale);for(let i=1;i<st.length;i++)x.lineTo((st[i][0]-minX)*scale,(st[i][1]-minY)*scale);x.stroke()}return out.toDataURL('image/jpeg',0.68)}
-function drawingStats(){let pts=strokes.reduce((n,s)=>n+s.length,0),len=0,minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;for(const st of strokes){for(let i=0;i<st.length;i++){let [x,y]=st[i];minX=Math.min(minX,x);minY=Math.min(minY,y);maxX=Math.max(maxX,x);maxY=Math.max(maxY,y);if(i){let [px,py]=st[i-1];len+=Math.hypot(x-px,y-py)}}}return {strokes:strokes.length,pts,len,bbox:(isFinite(minX)?[minX,minY,maxX,maxY]:null)};}
-function validDrawingAttempt(){let d=drawingStats();return d.strokes>=2 && d.pts>=8 && d.len>=45;}
+function extractTextContent(content){
+ if(typeof content==='string')return content;
+ if(Array.isArray(content))return content.map(x=>typeof x==='string'?x:(x?.text||x?.content||'')).join('\n');
+ if(content&&typeof content==='object')return content.text||content.content||'';
+ return '';
+}
+function parseAIJson(raw){
+ let t=extractTextContent(raw).trim();
+ if(!t)return null;
+ t=t.replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'').trim();
+ const a=t.indexOf('{'),b=t.lastIndexOf('}');
+ if(a<0||b<=a)return null;
+ try{return JSON.parse(t.slice(a,b+1))}catch(e){return null}
+}
+function validAIResult(j,isDrawing){
+ if(!j||typeof j!=='object'||!Number.isFinite(Number(j.score)))return false;
+ if(isDrawing&&!Array.isArray(j.criteria))return false;
+ return true;
+}
 function embeddedImages(kind,q){return window.EXAM_TUTOR_IMAGES?.[kind]?.[q.n]||[]}
 async function aiMark(){let p=state.paper,q=qs[state.qi],key=p.id+'-'+state.qi;
  let a=getAnswer(q,key);
  if(!a)return alert('Write, select, or draw an answer first.');
  if(q.type==='mcq'){mark();return;}
- if(drawingQuestions.has(q.n) && !validDrawingAttempt())return alert('There is not enough of a drawing to mark yet. Add the complete structure first.');
+ const isDrawing=drawingQuestions.has(q.n);
+ if(isDrawing&&!validDrawingAttempt())return alert('There is not enough of a drawing to mark yet. Add the complete structure first.');
  let token=aiKey();if(!token)return alert('Connect your OpenRouter key in AI examiner setup first.');
- state.answers[key]=a;persist();let btn=document.querySelector('#aiMarkBtn');if(btn){btn.disabled=true;btn.textContent='AI examiner is marking…'}
- const normalSystem=`You are a strict Pearson Edexcel International A Level Biology examiner. Mark only from the supplied question-specific marking guidance. Apply ACCEPT/IGNORE/DO NOT ACCEPT logic when it is provided. Reward scientifically equivalent wording, but do not award a mark merely because a related keyword appears. Respect the maximum mark and any cap. Return ONLY valid JSON with keys score (integer), max_score (integer), awarded (array of short strings), missed (array of short strings), feedback (short string), improved_answer (concise exam-style answer).`;
- const drawingSystem=`You are a strict Pearson Edexcel Biology diagram examiner. Inspect ONLY the student's drawing image. Award a mark only when the required feature is clearly visible. Scribbles, random lines, ambiguous shapes, or features you cannot verify score 0. For Q6(a), mark exactly: M1 = one glycerol, three fatty acids and three ester-bond connections are visibly represented; M2 = all components are visibly joined in the correct triglyceride arrangement. M2 cannot be awarded unless M1 is met. Return JSON only: {\"score\":0,\"max_score\":2,\"criteria\":[{\"criterion\":\"M1\",\"met\":false,\"visible_evidence\":\"\"},{\"criterion\":\"M2\",\"met\":false,\"visible_evidence\":\"\"}],\"feedback\":\"\",\"improved_answer\":\"\",\"drawing_valid\":true,\"uncertain\":false}. If you cannot actually inspect the pixels, set drawing_valid=false and uncertain=true.`;
+ state.answers[key]=a;persist();let btn=document.querySelector('#aiMarkBtn');if(btn){btn.disabled=true;btn.textContent='Marking…'}
+ const normalSystem=`You are a strict Pearson Edexcel International A Level Biology examiner. Use only the supplied question-specific marking guidance. Reward scientifically equivalent wording. Never invent extra marking points. Return one JSON object only with keys score, max_score, awarded, missed, feedback, improved_answer.`;
+ const drawingSystem=`You are marking a Pearson Edexcel Biology drawing. Inspect the STUDENT DRAWING image only. For Q6(a): M1 requires one glycerol, three fatty acids and three ester-bond connections visibly represented. M2 requires all components visibly joined in the correct triglyceride arrangement and cannot be awarded without M1. Random lines, scribbles or ambiguous features receive no credit. Return one JSON object only with: score, max_score, criteria (array containing M1 and M2 with met boolean and visible_evidence), feedback, improved_answer, drawing_valid, uncertain.`;
  const prompt=`Question ${q.n} (${q.marks} marks):\n${q.q}\n\nOfficial marking guidance:\n${schemeText(q)}\n\nStudent answer:\n${a}`;
- let userContent=prompt, system=normalSystem;
- if(drawingQuestions.has(q.n)){
-   system=drawingSystem;let img=canvasDataUrl();
-   userContent=[{type:'text',text:prompt+'\n\nThe single image below is the STUDENT DRAWING. Grade only visible features in this image. The official marking guidance is already provided as text above.'},{type:'image_url',image_url:{url:img}}];
+ let userContent=prompt,system=normalSystem;
+ if(isDrawing){let img=canvasDataUrl();userContent=[{type:'text',text:prompt+'\n\nThe image is the student drawing. Mark only features that are clearly visible.'},{type:'image_url',image_url:{url:img}}];system=drawingSystem;}
+ const cfg=window.EXAM_TUTOR_AI||{},endpoint=cfg.endpoint||'https://openrouter.ai/api/v1/chat/completions';
+ const models=isDrawing?[cfg.model||'openrouter/free','openrouter/free']:[cfg.model||'openrouter/free','openrouter/free'];
+ async function attempt(model,ms){
+  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),ms);
+  try{
+   const body={model,temperature:0,max_tokens:isDrawing?180:420,messages:[{role:'system',content:system},{role:'user',content:userContent}],response_format:{type:'json_object'},provider:{allow_fallbacks:true,sort:'latency'}};
+   const res=await fetch(endpoint,{method:'POST',signal:controller.signal,headers:{Authorization:'Bearer '+token,'Content-Type':'application/json','X-Title':'Private Exam Tutor'},body:JSON.stringify(body)});
+   let data=null;try{data=await res.json()}catch(_){throw new Error('Provider returned an unreadable response')}
+   if(!res.ok)throw new Error(data?.error?.message||`Provider error ${res.status}`);
+   const raw=data?.choices?.[0]?.message?.content;
+   const j=parseAIJson(raw);
+   if(!validAIResult(j,isDrawing))throw new Error('Provider did not return a usable mark');
+   return j;
+  }finally{clearTimeout(timer)}
  }
  try{
-   let cfg=window.EXAM_TUTOR_AI||{};
-   const endpoint=cfg.endpoint||'https://openrouter.ai/api/v1/chat/completions';
-   const payload=(model)=>({model,temperature:0,max_tokens:drawingQuestions.has(q.n)?120:420,messages:[{role:'system',content:system},{role:'user',content:userContent}],response_format:{type:'json_object'}});
-   async function callModel(model,ms){let controller=new AbortController(),timer=setTimeout(()=>controller.abort(),ms);try{let res=await fetch(endpoint,{method:'POST',signal:controller.signal,headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json','X-Title':'Private Exam Tutor'},body:JSON.stringify(payload(model))});let data=await res.json();if(!res.ok)throw new Error(data?.error?.message||`API error ${res.status}`);let raw=data?.choices?.[0]?.message?.content;if(!raw)throw new Error('The AI returned an empty response.');return parseAIJson(raw)}finally{clearTimeout(timer)}}
-   let j;
-   if(drawingQuestions.has(q.n)){try{j=await callModel(cfg.model||'qwen/qwen3.8-27b:free',12000)}catch(firstErr){if(btn)btn.textContent='Trying fast backup…';j=await callModel('openrouter/free',12000)}}else{j=await callModel(cfg.model||'qwen/qwen3.8-27b:free',20000)};
-   let details,score;
-   if(drawingQuestions.has(q.n)){
-     if(j.drawing_valid===false || j.uncertain===true)throw new Error('The vision examiner could not verify the drawing reliably. No mark was saved.');
-     let criteria=Array.isArray(j.criteria)?j.criteria:[];
-     details=criteria.map(c=>({ok:c.met===true,text:`${c.criterion}${c.visible_evidence?' — visible evidence: '+c.visible_evidence:''}`}));
-     score=details.filter(x=>x.ok).length;
-     score=Math.min(score,q.marks,Math.max(0,Number(j.score)||0));
-     if(!criteria.length)throw new Error('The vision examiner did not return criterion-by-criterion evidence. No mark was saved.');
-   }else{score=Math.max(0,Math.min(q.marks,Number(j.score)||0));details=[...(j.awarded||[]).map(x=>({ok:true,text:x})),...(j.missed||[]).map(x=>({ok:false,text:x}))];}
-   state.results[key]={score,details,answer:a,ai:true,feedback:j.feedback||'',improved:j.improved_answer||'',attemptedAt:Date.now()};persist();render();
- }catch(e){alert('AI marking could not run reliably: '+(e.name==='AbortError'?'The examiner did not respond in time, including the backup attempt.':e.message)+'\n\nNo AI mark has been saved. Your answer/drawing is still here, and you can compare it with the official mark scheme.');render();}
+  let j=null,lastErr=null;
+  for(let i=0;i<models.length;i++){
+   try{if(btn)btn.textContent=i?'Retrying examiner…':'Marking…';j=await attempt(models[i],isDrawing?9000:14000);break}catch(e){lastErr=e;}
+  }
+  if(!j)throw lastErr||new Error('No examiner was available');
+  let details,score;
+  if(isDrawing){
+   if(j.drawing_valid===false||j.uncertain===true)throw new Error('The examiner could not verify the drawing clearly');
+   const criteria=j.criteria;
+   details=criteria.map(c=>({ok:c.met===true,text:`${c.criterion||'Criterion'}${c.visible_evidence?' — '+c.visible_evidence:''}`}));
+   const met=details.filter(x=>x.ok).length;
+   score=Math.max(0,Math.min(q.marks,met,Number(j.score)||0));
+  }else{
+   score=Math.max(0,Math.min(q.marks,Number(j.score)||0));
+   details=[...(Array.isArray(j.awarded)?j.awarded:[]).map(x=>({ok:true,text:String(x)})),...(Array.isArray(j.missed)?j.missed:[]).map(x=>({ok:false,text:String(x)}))];
+  }
+  state.results[key]={score,details,answer:a,ai:true,feedback:String(j.feedback||''),improved:String(j.improved_answer||''),attemptedAt:Date.now()};persist();render();
+ }catch(e){
+  if(btn){btn.disabled=false;btn.textContent='✦ Mark with AI'}
+  const msg=e?.name==='AbortError'?'The examiner timed out.':(e?.message||'The examiner was unavailable.');
+  alert('AI marking is temporarily unavailable. '+msg+'\n\nNothing was marked or lost. Your answer is still saved.');
+ }
 }
+
 function render(){ if(state.view==='papers') papersView(); else if(state.view==='questions') questionList(); else viewer(); }
-function papersView(){app.innerHTML=`<div class="hero"><div><span class="eyebrow">YOUR STUDY STACKS · v6.4 CLEAN</span><h1>What do you want to practise?</h1><p>Exam questions, instant marking and feedback from the official Pearson mark scheme.</p></div><div class="stat"><b>2</b><span>active stacks</span></div></div><div class="sectionTitle"><div><h2>Biology · Unit 1</h2><p>Molecules, Diet, Transport and Health</p></div></div><div class="paperGrid">${papers.map(p=>`<article class="paperCard" onclick="openPaper('${p.id}')"><div class="paperTop"><span class="subjectBadge">BIOLOGY</span><span class="ready">● Ready</span></div><h3>${p.title}</h3><p>${p.code}</p>${p.id==='wbi11a-2601'?'<p class="paper-note">01A uses the same assessment questions as 01; Pearson supplies a separate Answer Book.</p>':''}<div class="paperMeta"><span>${p.time}</span><span>${p.marks} marks</span></div><button class="primary">Open stack →</button></article>`).join('')}</div><div class="notice"><b>Marking source:</b> the supplied Pearson mark schemes. All questions from the January 2026 Unit 1 paper are now included. The original PDFs remain available inside each paper.</div>`}
+function papersView(){app.innerHTML=`<div class="hero"><div><span class="eyebrow">YOUR STUDY STACKS · v6.5 STABLE</span><h1>What do you want to practise?</h1><p>Exam questions, instant marking and feedback from the official Pearson mark scheme.</p></div><div class="stat"><b>2</b><span>active stacks</span></div></div><div class="sectionTitle"><div><h2>Biology · Unit 1</h2><p>Molecules, Diet, Transport and Health</p></div></div><div class="paperGrid">${papers.map(p=>`<article class="paperCard" onclick="openPaper('${p.id}')"><div class="paperTop"><span class="subjectBadge">BIOLOGY</span><span class="ready">● Ready</span></div><h3>${p.title}</h3><p>${p.code}</p>${p.id==='wbi11a-2601'?'<p class="paper-note">01A uses the same assessment questions as 01; Pearson supplies a separate Answer Book.</p>':''}<div class="paperMeta"><span>${p.time}</span><span>${p.marks} marks</span></div><button class="primary">Open stack →</button></article>`).join('')}</div><div class="notice"><b>Marking source:</b> the supplied Pearson mark schemes. All questions from the January 2026 Unit 1 paper are now included. The original PDFs remain available inside each paper.</div>`}
 function questionList(){let p=state.paper;app.innerHTML=`<button class="back" onclick="go('papers')">← Papers</button><div class="paperHeader"><div><span class="subjectBadge">BIOLOGY</span><h1>${p.title}</h1><p>${p.code} · ${p.time} · ${p.marks} marks</p></div><div class="pdfBtns"><a href="${p.qp}" target="_blank">Question paper ↗</a><a href="${p.ms}" target="_blank">Mark scheme ↗</a></div></div><div class="paper-tools"><span>${Object.keys(state.results).filter(k=>k.startsWith(p.id)).length} / ${qs.length} parts attempted</span><button class="secondary" onclick="resetProgress()">Reset paper progress</button></div><div class="questionList">${qs.map((q,i)=>{let r=state.results[p.id+'-'+i],c=state.confidence[p.id+'-'+i];return `<div class="qrow" onclick="openQ(${i})"><div class="qnum">${q.n}</div><div class="grow"><b>${q.q}</b><span>${q.marks} mark${q.marks>1?'s':''}${c?' · confidence: '+c:''}</span></div>${r?`<div class="miniScore">${r.score}/${q.marks}</div>`:'<div class="unattempted">Not attempted</div>'}<div class="chev">›</div></div>`}).join('')}</div>`}
 function answerUI(q,key){if(drawingQuestions.has(q.n))return drawingUI(key);if(q.type==='mcq')return `<div class="choices">${q.options.map(o=>`<label><input type="radio" name="mcq" value="${o[0]}" ${state.answers[key]===o[0]?'checked':''}> <span>${o}</span></label>`).join('')}</div>`;return `<textarea id="ans" class="answer" placeholder="Write your exam answer here...">${esc(state.answers[key]||'')}</textarea>`}
 function viewer(){let p=state.paper,q=qs[state.qi],key=p.id+'-'+state.qi,r=state.results[key];app.innerHTML=`<div class="viewer-nav"><button class="back" onclick="state.view='questions';persist();render()">← Questions</button><div><button class="secondary" onclick="prevQ()" ${state.qi===0?'disabled':''}>← Previous</button> <button class="secondary" onclick="nextQ()" ${state.qi===qs.length-1?'disabled':''}>Next →</button></div></div><div class="viewer"><section class="exam"><div class="examBar"><span>${p.code}</span><b>${q.marks} MARK${q.marks>1?'S':''}</b></div><div class="qn">Question ${q.n}</div><div class="source-title"><b>Actual exam question</b><span>Shown directly from your Pearson paper so every diagram, graph, table and photo stays intact.</span></div><div class="source-pages">${sourcePages(q,p,'qp')}</div><details class="typed-question"><summary>Text version</summary><div class="questionText">${q.q}</div></details>${answerUI(q,key)}<div class="confidence"><span>How confident are you?</span>${['Low','Medium','High'].map(v=>`<button data-v="${v}" class="${state.confidence[key]===v?'active':''}" onclick="setConfidence('${v}')">${v}</button>`).join('')}</div><div class="actions"><button class="primary" id="aiMarkBtn" onclick="aiMark()">✦ Mark with AI</button><button class="secondary" onclick="mark()">Local mark</button><button class="secondary" onclick="clearAns()">Clear</button></div>${r?resultHTML(r,q,p):''}</section><aside class="sidebar"><div class="sideCard"><span class="tiny">PAPER</span><b>${p.title}</b><p>${p.code}</p>${p.id==='wbi11a-2601'?'<p class="paper-note">01A uses the same assessment questions as 01; Pearson supplies a separate Answer Book.</p>':''}</div><div class="sideCard"><span class="tiny">PROGRESS</span><b>${Object.keys(state.results).filter(k=>k.startsWith(p.id)).length} / ${qs.length} parts attempted</b></div><div class="sideCard"><span class="tiny">QUESTION</span><b>${state.qi+1} of ${qs.length}</b><p>This build starts clean. New answers save only on this device.</p></div><div class="ai-status"><span class="ai-dot ${aiKey()?'':'off'}"></span>${aiKey()?'AI examiner connected':'AI examiner not connected'}</div>${setupAI()}<a class="sideLink" href="${p.qp}" target="_blank">Open original question paper ↗</a></aside></div>`;setTimeout(()=>{if(drawingQuestions.has(q.n))initDrawing()},0)}
