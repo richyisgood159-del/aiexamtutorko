@@ -70,37 +70,36 @@ try{
     const keepKey=sessionStorage.getItem('examTutorOpenRouterKey')||'';
     const ss=[]; for(let i=0;i<sessionStorage.length;i++){const k=sessionStorage.key(i)||'';if(k.startsWith('examTutor')&&k!=='examTutorOpenRouterKey')ss.push(k)}
     ss.forEach(k=>sessionStorage.removeItem(k));
-    const ls=[]; for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i)||'';if(k.startsWith('examTutor'))ls.push(k)}
-    ls.forEach(k=>localStorage.removeItem(k));
+    // v14 keeps permanent progress in localStorage; do not wipe it on a new browser session.
     if(keepKey)sessionStorage.setItem('examTutorOpenRouterKey',keepKey);
     sessionStorage.setItem(MIGRATION_KEY,'done');
   }
 }catch(e){}
-const defaultState={view:'papers',paper:null,qi:0,answers:{},results:{},confidence:{},attempts:{}};
-let state={...defaultState,answers:{},results:{},confidence:{},attempts:{}};
+const defaultState={view:'papers',paper:null,qi:0,answers:{},results:{},confidence:{},attempts:{},history:{}};
+let state={...defaultState,answers:{},results:{},confidence:{},attempts:{},history:{}};
 try{
-  const saved=JSON.parse(sessionStorage.getItem(STATE_KEY)||'null');
-  if(saved&&typeof saved==='object') state={...defaultState,...saved,answers:saved.answers||{},results:saved.results||{},confidence:saved.confidence||{},attempts:saved.attempts||{}};
-}catch(e){ state={...defaultState,answers:{},results:{},confidence:{},attempts:{}}; }
+  const saved=JSON.parse(localStorage.getItem(STATE_KEY)||sessionStorage.getItem(STATE_KEY)||'null');
+  if(saved&&typeof saved==='object') state={...defaultState,...saved,answers:saved.answers||{},results:saved.results||{},confidence:saved.confidence||{},attempts:saved.attempts||{},history:saved.history||{}};
+}catch(e){ state={...defaultState,answers:{},results:{},confidence:{},attempts:{},history:{}}; }
 if(state.paper&&state.paper.id) state.paper=papers.find(p=>p.id===state.paper.id)||null;
 let drawData={};
 let redoStrokes=[]; let drawTool='pen'; let drawWidth=2.2; let pencilOnly=true;
-function persist(){try{sessionStorage.setItem(STATE_KEY,JSON.stringify({...state,paper:state.paper?{id:state.paper.id}:null}))}catch(e){}}
+function persist(){try{localStorage.setItem(STATE_KEY,JSON.stringify({...state,paper:state.paper?{id:state.paper.id}:null}))}catch(e){}}
 function go(view){state.view=view;if(view==='papers'){state.paper=null;state.qi=0}persist();render()}
 function openPaper(id){state.paper=papers.find(p=>p.id===id)||papers[0];state.view='questions';state.qi=0;persist();render()}
 function openQ(i){state.qi=Math.max(0,Math.min(qs.length-1,Number(i)||0));state.view='viewer';persist();render()}
 function prevQ(){if(state.qi>0){state.qi--;persist();render()}}
 function nextQ(){if(state.qi<qs.length-1){state.qi++;persist();render()}}
 function setConfidence(v){let key=state.paper.id+'-'+state.qi;state.confidence[key]=v;persist();render()}
-function resetProgress(){if(!state.paper)return;let prefix=state.paper.id+'-';for(const k of Object.keys(state.answers))if(k.startsWith(prefix))delete state.answers[k];for(const k of Object.keys(state.results))if(k.startsWith(prefix))delete state.results[k];for(const k of Object.keys(state.confidence))if(k.startsWith(prefix))delete state.confidence[k];for(const k of Object.keys(state.attempts||{}))if(k.startsWith(prefix))delete state.attempts[k];drawData={};strokes=[];persist();render()}
+function resetProgress(){if(!state.paper)return;let prefix=state.paper.id+'-';for(const k of Object.keys(state.answers))if(k.startsWith(prefix))delete state.answers[k];for(const k of Object.keys(state.results))if(k.startsWith(prefix))delete state.results[k];for(const k of Object.keys(state.confidence))if(k.startsWith(prefix))delete state.confidence[k];for(const k of Object.keys(state.attempts||{}))if(k.startsWith(prefix))delete state.attempts[k];for(const k of Object.keys(state.history||{}))if(k.startsWith(prefix))delete state.history[k];drawData={};strokes=[];persist();render()}
 function resetEverything(){
-  state={...defaultState,answers:{},results:{},confidence:{},attempts:{}};drawData={};strokes=[];
-  try{sessionStorage.removeItem(STATE_KEY)}catch(e){}
+  state={...defaultState,answers:{},results:{},confidence:{},attempts:{},history:{}};drawData={};strokes=[];
+  try{localStorage.removeItem(STATE_KEY);sessionStorage.removeItem(STATE_KEY)}catch(e){}
   persist();render();
 }
 function newCleanSession(){
-  try{sessionStorage.removeItem(STATE_KEY)}catch(e){}
-  state={...defaultState,answers:{},results:{},confidence:{},attempts:{}};drawData={};strokes=[];persist();render();
+  try{localStorage.removeItem(STATE_KEY);sessionStorage.removeItem(STATE_KEY)}catch(e){}
+  state={...defaultState,answers:{},results:{},confidence:{},attempts:{},history:{}};drawData={};strokes=[];persist();render();
 }
 function aiKey(){return sessionStorage.getItem('examTutorOpenRouterKey')||''}
 function saveAiKey(){let e=document.getElementById('aiKey'),v=(e?.value||'').trim();if(!v)return alert('Paste your OpenRouter API key first.');sessionStorage.setItem('examTutorOpenRouterKey',v);render()}
@@ -240,7 +239,7 @@ async function aiMark(){
    }
    if(!j)throw lastErr||new Error('No examiner available');
    const details=[...j.awarded.map(x=>({ok:true,text:x})),...j.missed.map(x=>({ok:false,text:x}))];
-   state.results[key]={score:j.score,details,answer:a,ai:true,feedback:j.feedback||'',why:j.why||'',next:j.next||'',improved:String(j.improved_answer||''),attempt:state.attempts[key],attemptedAt:Date.now()};persist();render();
+   state.results[key]={score:j.score,details,answer:a,ai:true,feedback:j.feedback||'',why:j.why||'',next:j.next||'',improved:String(j.improved_answer||''),attempt:state.attempts[key],attemptedAt:Date.now()};state.history=state.history||{};state.history[key]=state.history[key]||[];state.history[key].push({...state.results[key]});if(state.history[key].length>20)state.history[key]=state.history[key].slice(-20);persist();render();
  }catch(e){if(btn){btn.disabled=false;btn.textContent='✦ Mark written answer'};const msg=e?.name==='AbortError'?'The free examiner timed out.':(e?.message||'The free examiner was unavailable.');alert('Written marking could not complete. No mark was saved.\n\n'+msg+'\n\nYour answer is still on the page, so you can retry.');}
 }
 function showDrawingScheme(){

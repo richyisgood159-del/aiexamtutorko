@@ -28,3 +28,9 @@
 .draw-fullscreen .draw-tools{flex:0 0 auto}.draw-fullscreen .draw-canvas{height:auto!important;flex:1 1 auto;min-height:0}.draw-fullscreen .draw-hint{flex:0 0 auto}
 body.drawing-open{overflow:hidden;touch-action:none}
 @media(max-width:800px){.draw-canvas{height:480px}.ipad-tools{gap:6px}.ipad-tools button{padding:8px 10px;font-size:12px}.draw-fullscreen{inset:max(6px,env(safe-area-inset-top)) max(6px,env(safe-area-inset-right)) max(6px,env(safe-area-inset-bottom)) max(6px,env(safe-area-inset-left))!important}}
+/* v14 progress upgrade: marked-answer evidence + attempt history */
+.marked-answer{white-space:pre-wrap;line-height:1.85;padding:16px 18px;border:1px solid var(--line);border-radius:12px;background:#fff;font-size:15px}
+.marked-answer .mark-earned{background:#dcfce7;box-shadow:0 0 0 2px #dcfce7;border-radius:3px}
+.marked-answer .mark-partial{background:#fef3c7;box-shadow:0 0 0 2px #fef3c7;border-radius:3px}
+.highlight-key{display:flex;gap:18px;flex-wrap:wrap;margin:9px 2px 20px;color:var(--muted);font-size:12px}.highlight-key span{display:flex;align-items:center;gap:6px}.highlight-key i{width:13px;height:13px;border-radius:3px;display:inline-block}.key-green{background:#dcfce7}.key-amber{background:#fef3c7}
+.attempt-history{margin-top:22px;padding-top:18px;border-top:1px solid var(--line)}.attempt-chips{display:flex;gap:8px;flex-wrap:wrap}.attempt-chip{padding:8px 10px;border-radius:999px;background:#f1f5f9;font-size:12px}.attempt-chip.latest{background:#e0e7ff}.improvement-note{font-size:13px;color:var(--muted)}
