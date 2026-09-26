@@ -1,18 +1,12 @@
-# AI Exam Tutor — Clean Build v4
+AI Exam Tutor v13 — Psychology Pearson Examiner
 
-Fixes in this build:
-- Starts with a fresh v4 local-storage namespace, so old answers/marks/drawings do not appear.
-- Question and mark-scheme crops are embedded in `image-data.js`, so they still display even if GitHub folder uploads are missed.
-- Original crop folders are also included as a fallback.
-- MCQs mark instantly without an AI call.
-- Drawing marking sends the student drawing + exact original question crop + exact official mark-scheme crop in the same multimodal request.
-- Full question paper and mark scheme remain available as fallbacks.
-
-Upload ALL root files to GitHub. The most important files are `index.html`, `app.js`, `styles.css`, `api-config.js`, and `image-data.js`. Never put your OpenRouter key in GitHub.
-
-
-## v6.2 drawing update
-- Q6(a) is a freehand canvas again (mouse, trackpad, touch, Apple Pencil).
-- Drawing AI sends only the student drawing plus the text rubric, reducing upload and inference latency.
-- Uses a fixed free multimodal Gemma 4 31B model rather than the random free router.
-- Strict criterion evidence: uncertain/unreadable drawings do not save a mark.
+Changes from v12:
+- Removed the visible duplicate QUESTION TEXT block. Extracted question/stimulus text remains internal for AI marking only.
+- Kept the Biology-style question viewer and original Pearson page images.
+- Supports multiple Pearson source pages per question when metadata supplies them.
+- 8/12 mark Psychology responses use a second independent examiner audit before the final result is shown.
+- Pearson level bands are enforced locally after AI classification.
+- AO1/AO2/AO3, reasoning chains, balance/application, conclusion/judgement, next-level blocker and improvement feedback remain visible.
+- Short answers stay question-specific and scheme-constrained.
+- Graph/drawing questions remain manual self-mark only.
+- Added unobtrusive answer word count.

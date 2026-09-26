@@ -17,3 +17,6 @@
 .extended-checks{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:14px 0}
 .extended-checks>div{padding:12px;border:1px solid #e5e7eb;border-radius:10px;background:#fafafa}.extended-checks b,.extended-checks span{display:block}.extended-checks span{margin-top:5px;font-size:13px;line-height:1.4}
 @media(max-width:800px){.extended-checks{grid-template-columns:1fr}}
+/* v13: keep the viewer visually identical to Biology; extracted question text stays internal for marking only. */
+.typed-question.always-visible{display:none!important}.answer-meta{display:flex;justify-content:space-between;gap:12px;color:var(--muted);font-size:12px;margin:7px 2px 0}.question-crop+ .question-crop{margin-top:12px}.question-crop img{display:block;width:100%;height:auto;border-radius:8px}
+@media(max-width:800px){.answer-meta{flex-direction:column;gap:3px}}
