@@ -28,10 +28,6 @@
 .draw-fullscreen .draw-tools{flex:0 0 auto}.draw-fullscreen .draw-canvas{height:auto!important;flex:1 1 auto;min-height:0}.draw-fullscreen .draw-hint{flex:0 0 auto}
 body.drawing-open{overflow:hidden;touch-action:none}
 @media(max-width:800px){.draw-canvas{height:480px}.ipad-tools{gap:6px}.ipad-tools button{padding:8px 10px;font-size:12px}.draw-fullscreen{inset:max(6px,env(safe-area-inset-top)) max(6px,env(safe-area-inset-right)) max(6px,env(safe-area-inset-bottom)) max(6px,env(safe-area-inset-left))!important}}
-\n/* v15 stable progress: display-only additions; examiner unchanged */
+/* v16: local-only review/progress UI. Does not participate in AI marking. */
 .answer-review,.attempt-history{margin-top:22px;padding-top:18px;border-top:1px solid #e5e7eb}
-.answer-copy{white-space:pre-wrap;line-height:1.8;font-size:16px;background:#fafafa;border:1px solid #e5e7eb;border-radius:12px;padding:16px}
-.answer-copy mark{padding:2px 1px;border-radius:4px;color:inherit}
-.earned-hi{background:#c9f7d5}.partial-hi{background:#ffe7a8}
-.review-key{font-size:13px;color:#667085}.key-green,.key-amber{font-weight:700;padding:2px 6px;border-radius:6px}.key-green{background:#c9f7d5}.key-amber{background:#ffe7a8}
-.attempt-chips{display:flex;flex-wrap:wrap;gap:8px}.attempt-chip{background:#f2f4f7;border:1px solid #e4e7ec;border-radius:999px;padding:7px 10px;font-size:13px}.attempt-change{margin-bottom:0}
+.review-key{display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:#667085;margin:8px 0 12px}.review-key span{display:flex;align-items:center;gap:6px}.credit-dot,.partial-dot{width:10px;height:10px;border-radius:3px;display:inline-block}.credit-dot{background:#bbf7d0}.partial-dot{background:#fde68a}.review-text{line-height:1.9;padding:14px;border:1px solid #e5e7eb;border-radius:12px;background:#fff;white-space:pre-wrap}.review-text mark{padding:2px 1px;border-radius:3px}.credit-highlight{background:#bbf7d0}.partial-highlight{background:#fde68a}.attempt-chips{display:flex;flex-wrap:wrap;gap:8px}.attempt-chip{background:#f2f4f7;border:1px solid #e4e7ec;border-radius:999px;padding:7px 10px;font-size:13px}.attempt-change{margin-bottom:0}

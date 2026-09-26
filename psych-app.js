@@ -1,9 +1,25 @@
 const app=document.getElementById('app');
 const papers=window.PSYCH_DATA||[];
 const KEY='examTutorPsychV13';
+const PROGRESS_KEY='examTutorPsychProgressV16';
 let state={view:'papers',paperId:null,qi:0,answers:{},results:{}};
 try{state={...state,...JSON.parse(sessionStorage.getItem(KEY)||'{}')}}catch(e){}
+let progress={answers:{},results:{},attempts:{}};
+try{progress={...progress,...JSON.parse(localStorage.getItem(PROGRESS_KEY)||'{}')}}catch(e){}
+progress.answers=progress.answers||{}; progress.results=progress.results||{}; progress.attempts=progress.attempts||{};
+state.answers={...progress.answers,...(state.answers||{})}; state.results={...progress.results,...(state.results||{})};
+const persistProgress=()=>{try{localStorage.setItem(PROGRESS_KEY,JSON.stringify(progress))}catch(e){}};
 const save=()=>{try{sessionStorage.setItem(KEY,JSON.stringify(state))}catch(e){}};
+function saveProgressAnswer(k,a){progress.answers[k]=a;persistProgress()}
+function saveSuccessfulResult(k,a,r){
+ progress.answers[k]=a; progress.results[k]=r;
+ const arr=progress.attempts[k]||(progress.attempts[k]=[]);
+ arr.push({score:r.score,level:r.level||'',answer:a,at:Date.now()});
+ if(arr.length>20)arr.splice(0,arr.length-20);
+ persistProgress();
+}
+function clearProgressForPaper(id){const pre=id+'-';for(const bucket of [progress.answers,progress.results,progress.attempts])for(const k of Object.keys(bucket))if(k.startsWith(pre))delete bucket[k];persistProgress()}
+
 const paper=()=>papers.find(p=>p.id===state.paperId)||null;
 const q=()=>paper()?.questions?.[state.qi]||null;
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -13,10 +29,10 @@ function openPaper(id){state.paperId=id;state.qi=0;state.view='list';save();rend
 function openQ(i){state.qi=i;state.view='viewer';save();render()}
 function home(){location.href='index.html'}
 function back(){state.view=state.view==='viewer'?'list':'papers';save();render()}
-function resetPaper(){const pre=state.paperId+'-';for(const o of [state.answers,state.results])for(const k of Object.keys(o))if(k.startsWith(pre))delete o[k];save();render()}
+function resetPaper(){const pre=state.paperId+'-';for(const o of [state.answers,state.results])for(const k of Object.keys(o))if(k.startsWith(pre))delete o[k];clearProgressForPaper(state.paperId);save();render()}
 function key(){return state.paperId+'-'+state.qi}
 function answer(){return document.getElementById('answer')?.value?.trim()||''}
-function saveAnswer(){const a=document.getElementById('answer')?.value??'';state.answers[key()]=a;save()}
+function saveAnswer(){const a=document.getElementById('answer')?.value??'';const k=key();state.answers[k]=a;save();saveProgressAnswer(k,a)}
 function paperView(){
  app.innerHTML=`<button class="back" onclick="home()">← Biology / home</button><div class="hero"><div><span class="eyebrow">PSYCHOLOGY · v13 PEARSON EXAMINER</span><h1>WPS01 · Social & Cognitive Psychology</h1><p>Six complete exam-series stacks with Pearson-specific AO and levels-based marking.</p></div><div class="stat"><b>${papers.length}</b><span>paper stacks</span></div></div><div class="psych-note"><b>Psychology marking:</b> short answers are marked against the exact paper-specific scheme. 8- and 12-mark responses are judged holistically against that question's Pearson level descriptors, AO balance, command word, application and conclusion/judgement requirements.</div><div class="paperGrid">${papers.map(p=>`<article class="paperCard" onclick="openPaper('${p.id}')"><div class="paperTop"><span class="subjectBadge">PSYCHOLOGY</span><span class="ready">● Ready</span></div><h3>${p.title}</h3><p>${p.code}</p><div class="paperMeta"><span>${p.time}</span><span>${p.marks} marks</span></div><button class="primary">Open stack →</button></article>`).join('')}</div>`;
 }
@@ -27,11 +43,21 @@ function sourceImages(p,x,kind,alt){const pages=(kind==='qp'?(x.qpPages||[x.qpPa
 function sourceFallback(img,kind,page){const p=paper();const pdf=kind==='qp'?p.qp:p.ms;img.closest('figure').outerHTML=`<div class="image-error"><b>${kind==='qp'?'Question':'Mark scheme'} preview could not load.</b><br><a class="open-page" href="${pdf}#page=${page}" target="_blank">Open the exact Pearson page ↗</a></div>`}
 function viewer(){const p=paper(),x=q(),k=key(),r=state.results[k],a=state.answers[k]||'';app.innerHTML=`<div class="viewer-nav"><button class="back" onclick="back()">← Questions</button><div><button class="secondary" ${state.qi===0?'disabled':''} onclick="state.qi--;save();render()">← Previous</button> <button class="secondary" ${state.qi===p.questions.length-1?'disabled':''} onclick="state.qi++;save();render()">Next →</button></div></div><div class="viewer"><section class="exam"><div class="examBar"><span>${p.code}</span><b>${x.marks} MARK${x.marks!==1?'S':''}</b></div><div class="qn">Question ${x.n}</div>${x.extended?`<div class="guidance"><b>Levels-based ${x.marks}-marker</b><br>Pearson AO split and level descriptors are used holistically — not keyword counting.</div>`:''}<div class="source-title"><b>Actual exam question</b><span>Shown directly from your Pearson paper so tables, scenarios and figures stay intact.</span></div><div class="source-pages">${sourceImages(p,x,'qp','Original Pearson question')}</div><textarea id="answer" class="answer" placeholder="Write your exam answer here..." oninput="saveAnswer();updateWordCount()">${esc(a)}</textarea><div class="answer-meta"><span id="wordCount">${a.trim()?a.trim().split(/\s+/).length:0} words</span><span>${x.extended?'Pearson levels-based response':'Answer only what the command word requires'}</span></div><div class="actions">${x.drawing?`<button class="primary" onclick="toggleScheme()">Show mark scheme & self-mark</button>`:`<button class="primary" id="markBtn" onclick="markAI()">✦ Mark written answer</button>`}<button class="secondary" onclick="toggleScheme()">Show Pearson scheme</button><button class="secondary" onclick="clearAnswer()">Clear</button></div>${x.drawing?manualBox(x):''}<div id="schemeBox" class="official-ms" hidden><h3>Actual Pearson mark scheme</h3><p>Original mark-scheme page for this question.</p><div class="source-pages">${sourceImages(p,x,'ms','Official Pearson mark scheme')}</div></div>${r?resultBox(r,x):''}</section><aside class="sidebar"><div class="sideCard"><span class="tiny">PAPER</span><b>${p.title}</b><p>${p.code}</p></div><div class="sideCard"><span class="tiny">PROGRESS</span><b>${Object.keys(state.results).filter(z=>z.startsWith(p.id)).length} / ${p.questions.length} parts attempted</b></div><div class="sideCard"><span class="tiny">QUESTION</span><b>${state.qi+1} of ${p.questions.length}</b><p>${x.extended?`${x.marks}-mark Pearson levels-based response.`:'Short-answer Pearson marking.'}</p></div><div class="ai-status"><span class="ai-dot ${apiKey()?'':'off'}"></span>${apiKey()?'AI examiner connected':'AI examiner not connected'}</div>${!apiKey()&&!x.drawing?`<div class="ai-setup"><b>AI examiner setup</b><p class="ai-note">Connect your OpenRouter key for Psychology marking.</p><input id="apiKey" type="password" autocomplete="off" placeholder="OpenRouter API key"><button class="secondary" onclick="setKey()">Connect AI</button></div>`:''}<a class="sideLink" href="${p.qp}#page=${x.qpPage}" target="_blank">Open original question paper ↗</a></aside></div>`}
 function updateWordCount(){const a=document.getElementById('answer')?.value.trim()||'';const e=document.getElementById('wordCount');if(e)e.textContent=(a?a.split(/\s+/).length:0)+' words'}
-function clearAnswer(){state.answers[key()]='';delete state.results[key()];save();render()}
+function clearAnswer(){const k=key();state.answers[k]='';delete state.results[k];delete progress.answers[k];delete progress.results[k];persistProgress();save();render()}
 function toggleScheme(){const b=document.getElementById('schemeBox');if(!b)return;b.hidden=!b.hidden;if(!b.hidden)b.scrollIntoView({behavior:'smooth',block:'start'})}
 function manualBox(x){return `<div class="psych-note"><b>Graph/drawing question:</b> AI marking is disabled. Complete it on paper or in the PDF, reveal the Pearson scheme, then self-mark.</div><div class="actions"><button class="primary" onclick="toggleScheme()">Show Pearson scheme</button></div><div class="manual-score">${Array.from({length:x.marks+1},(_,i)=>`<button class="secondary" onclick="selfMark(${i})">${i}/${x.marks}</button>`).join('')}</div>`}
 function selfMark(s){state.results[key()]={score:s,self:true};save();render()}
-function resultBox(r,x){const ao=r.ao||{};return `<div class="result"><div class="resultHead"><div><span class="tiny">MARK</span><div class="bigScore">${r.score}<small>/${x.marks}</small></div></div></div>${r.level?`<p><span class="level-badge">Level ${esc(r.level)}</span></p>`:''}${x.extended?`<div class="ao-grid"><div class="ao-card"><b>AO1</b><br>${esc(ao.AO1||'—')}</div><div class="ao-card"><b>AO2</b><br>${esc(ao.AO2||'—')}</div><div class="ao-card"><b>AO3</b><br>${esc(ao.AO3||'—')}</div></div>`:''}${r.awarded?.length?`<h3>What earned credit</h3><ul>${r.awarded.map(v=>`<li>${esc(v)}</li>`).join('')}</ul>`:''}${r.missed?.length?`<h3>What is missing</h3><ul>${r.missed.map(v=>`<li>${esc(v)}</li>`).join('')}</ul>`:''}${x.extended&&(r.chains||r.balance||r.conclusion)?`<div class="extended-checks"><div><b>Reasoning chains</b><span>${esc(r.chains||'—')}</span></div><div><b>Balance / application</b><span>${esc(r.balance||'—')}</span></div><div><b>Conclusion / judgement</b><span>${esc(r.conclusion||'—')}</span></div></div>`:''}${r.why?`<h3>${x.extended?'Why this level/mark':'Examiner reasoning'}</h3><p>${esc(r.why)}</p>`:''}${r.blocker?`<h3>Why it did not reach the next level</h3><p>${esc(r.blocker)}</p>`:''}${r.next?`<h3>Highest-value improvement</h3><p>${esc(r.next)}</p>`:''}${r.improved?`<h3>Full-mark model</h3><p>${esc(r.improved)}</p>`:''}<button class="secondary" onclick="toggleScheme()">Compare with Pearson scheme</button></div>`}
+function normWords(s){return String(s||'').toLowerCase().replace(/[^a-z0-9\s]/g,' ').split(/\s+/).filter(w=>w.length>2&&!['the','and','that','this','with','from','into','for','are','was','were','has','have','because'].includes(w))}
+function reviewAnswer(k,r){
+ const a=state.answers[k]||''; if(!a.trim())return '';
+ const evidence=(r.awarded||[]).map(v=>String(v).split(/\s*(?:->|→)\s*/)[0]).filter(Boolean);
+ const evSets=evidence.map(e=>new Set(normWords(e))).filter(x=>x.size);
+ const sentences=a.match(/[^.!?\n]+[.!?]?|\n+/g)||[a];
+ const marked=sentences.map(part=>{if(/^\s*$/.test(part))return esc(part);const words=normWords(part),set=new Set(words);let best=0;for(const ev of evSets){let hit=0;for(const w of ev)if(set.has(w))hit++;best=Math.max(best,hit/Math.max(1,ev.size));}const cls=best>=.58?'credit-highlight':best>=.38?'partial-highlight':'';return cls?`<mark class="${cls}">${esc(part)}</mark>`:esc(part)}).join(' ');
+ return `<div class="answer-review"><h3>Your marked answer</h3><div class="review-key"><span><i class="credit-dot"></i> credited evidence</span><span><i class="partial-dot"></i> possible partial match</span></div><div class="review-text">${marked}</div></div>`;
+}
+function attemptHistory(k,x){const arr=progress.attempts[k]||[];if(!arr.length)return '';const first=arr[0].score,last=arr[arr.length-1].score,delta=last-first;return `<div class="attempt-history"><h3>Attempt history</h3><div class="attempt-chips">${arr.map((v,i)=>`<span class="attempt-chip">Attempt ${i+1}: <b>${v.score}/${x.marks}</b>${v.level?` · L${esc(v.level)}`:''}</span>`).join('')}</div>${arr.length>1?`<p class="attempt-change">Change from first attempt: <b>${delta>=0?'+':''}${delta} mark${Math.abs(delta)===1?'':'s'}</b></p>`:''}</div>`}
+function resultBox(r,x){const ao=r.ao||{};return `<div class="result"><div class="resultHead"><div><span class="tiny">MARK</span><div class="bigScore">${r.score}<small>/${x.marks}</small></div></div></div>${r.level?`<p><span class="level-badge">Level ${esc(r.level)}</span></p>`:''}${x.extended?`<div class="ao-grid"><div class="ao-card"><b>AO1</b><br>${esc(ao.AO1||'—')}</div><div class="ao-card"><b>AO2</b><br>${esc(ao.AO2||'—')}</div><div class="ao-card"><b>AO3</b><br>${esc(ao.AO3||'—')}</div></div>`:''}${r.awarded?.length?`<h3>What earned credit</h3><ul>${r.awarded.map(v=>`<li>${esc(v)}</li>`).join('')}</ul>`:''}${r.missed?.length?`<h3>What is missing</h3><ul>${r.missed.map(v=>`<li>${esc(v)}</li>`).join('')}</ul>`:''}${x.extended&&(r.chains||r.balance||r.conclusion)?`<div class="extended-checks"><div><b>Reasoning chains</b><span>${esc(r.chains||'—')}</span></div><div><b>Balance / application</b><span>${esc(r.balance||'—')}</span></div><div><b>Conclusion / judgement</b><span>${esc(r.conclusion||'—')}</span></div></div>`:''}${r.why?`<h3>${x.extended?'Why this level/mark':'Examiner reasoning'}</h3><p>${esc(r.why)}</p>`:''}${r.blocker?`<h3>Why it did not reach the next level</h3><p>${esc(r.blocker)}</p>`:''}${r.next?`<h3>Highest-value improvement</h3><p>${esc(r.next)}</p>`:''}${r.improved?`<h3>Full-mark model</h3><p>${esc(r.improved)}</p>`:''}${reviewAnswer(key(),r)}${attemptHistory(key(),x)}<button class="secondary" onclick="toggleScheme()">Compare with Pearson scheme</button></div>`}
 function line(t,n){const m=t.match(new RegExp('(?:^|\\n)'+n+'\\s*:\\s*(.*)','i'));return m?m[1].trim():''}
 function split(v){return String(v||'').split(/\s*\|\s*/).map(s=>s.trim()).filter(s=>s&&!/^(none|n\/a|—)$/i.test(s))}
 async function auditExtended(x,a,first,token,endpoint){
@@ -77,7 +103,7 @@ async function markAI(){
    }
    // One-pass extended marking: same parsed result on iPad and desktop; avoids a second slow network call.
    // The first examiner already receives the full Pearson descriptors/AO rules and local band enforcement.
-   state.results[key()]=rr;save();render();return;
+   state.results[key()]=rr;save();render();setTimeout(()=>saveSuccessfulResult(key(),a,rr),0);return;
   }catch(e){last=e}
  }
  if(b){b.disabled=false;b.textContent='✦ Mark written answer'} alert('Marking did not complete. Your answer is still saved, so you can retry.\n\n'+(last?.message||'Examiner unavailable.'));
