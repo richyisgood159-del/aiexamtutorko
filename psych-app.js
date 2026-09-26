@@ -58,9 +58,16 @@ async function markAI(){
    if(!res.ok)throw new Error('OpenRouter '+res.status); const d=await res.json(); const t=typeof d?.choices?.[0]?.message?.content==='string'?d.choices[0].message.content:'';
    let num=Number((line(t,'SCORE').match(/\d+/)||[])[0]); if(!Number.isFinite(num))throw new Error('Incomplete examiner response');
    let level=extended?(line(t,'LEVEL').match(/[1-4]/)?.[0]||''):'';
-   if(extended && !level)throw new Error('No Pearson level returned');
+   // Some otherwise-valid examiner replies omit the LEVEL label. Do not throw away a completed mark:
+   // derive the Pearson band from the returned score, then keep enforcing that band's boundaries locally.
+   if(extended && !level && num>0){
+    const scoreBands=x.marks===12?[[1,3,1],[4,6,2],[7,9,3],[10,12,4]]:[[1,2,1],[3,4,2],[5,6,3],[7,8,4]];
+    level=String((scoreBands.find(([lo,hi])=>num>=lo&&num<=hi)||scoreBands[0])[2]);
+   }
+   // Pearson awards 0 as no rewardable material, outside Levels 1-4.
+   if(extended && num===0)level='';
    // Enforce Pearson level boundaries locally so a model cannot return an impossible score/level pair.
-   if(extended){const bands=x.marks===12?{1:[1,3],2:[4,6],3:[7,9],4:[10,12]}:{1:[1,2],2:[3,4],3:[5,6],4:[7,8]};const band=bands[level];if(band)num=Math.max(band[0],Math.min(band[1],num));}
+   if(extended&&level){const bands=x.marks===12?{1:[1,3],2:[4,6],3:[7,9],4:[10,12]}:{1:[1,2],2:[3,4],3:[5,6],4:[7,8]};const band=bands[level];if(band)num=Math.max(band[0],Math.min(band[1],num));}
    num=Math.max(0,Math.min(x.marks,Math.round(num))); const awarded=split(line(t,'AWARDED')),missed=split(line(t,'MISSED'));
    if(num>0&&!awarded.length)throw new Error('Examiner gave marks without evidence');
    let rr={score:num,level,ao:{AO1:line(t,'AO1'),AO2:line(t,'AO2'),AO3:line(t,'AO3')},chains:line(t,'CHAINS'),balance:line(t,'BALANCE'),conclusion:line(t,'CONCLUSION'),awarded,missed,why:line(t,'WHY_LEVEL'),blocker:line(t,'BLOCKER'),next:line(t,'NEXT'),improved:line(t,'IMPROVED')};
