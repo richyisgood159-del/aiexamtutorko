@@ -9,3 +9,11 @@
 .image-error{padding:28px;border:1px dashed #c9ced8;border-radius:12px;text-align:center;color:#687086;background:#fafbfc}
 .draw-hint{margin-top:10px;padding:10px 12px;border-radius:10px;background:#f5f7fb;font-size:13px;line-height:1.4;color:#4b5563}
 .structure-board{position:relative;height:430px;border:2px solid #d9dee8;border-radius:14px;background:#fff;margin-top:12px;overflow:hidden;touch-action:none}.chem-piece{position:absolute;transform:translate(-50%,-50%);cursor:grab;user-select:none;touch-action:none}.chem-piece:active{cursor:grabbing}.chem-piece span{position:absolute;font-size:11px;white-space:nowrap;top:calc(100% + 5px);left:50%;transform:translateX(-50%);color:#667085}.chem-piece.glycerol{width:58px;height:142px;background:#c9cdd2;border:2px solid #20252b}.chem-piece.fatty{width:30px;height:138px;background:#fff;border:2px solid #20252b}.chem-piece.bond{width:92px;height:3px;background:#20252b}.paper-note{font-size:12px;color:#667085;line-height:1.35}.draw-hint{margin-top:12px;font-size:13px;color:#475467}
+
+/* v12 psychology readability + examiner diagnostics */
+.typed-question.always-visible{display:block;margin:18px 0 20px;padding:18px 20px;border:1px solid #dfe4ee;border-radius:14px;background:#fff}
+.typed-label{font-size:11px;font-weight:800;letter-spacing:.12em;color:#6b7280;margin-bottom:9px}
+.typed-question.always-visible .questionText{white-space:pre-wrap;font-size:16px;line-height:1.58;color:#111827;font-weight:500}
+.extended-checks{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:14px 0}
+.extended-checks>div{padding:12px;border:1px solid #e5e7eb;border-radius:10px;background:#fafafa}.extended-checks b,.extended-checks span{display:block}.extended-checks span{margin-top:5px;font-size:13px;line-height:1.4}
+@media(max-width:800px){.extended-checks{grid-template-columns:1fr}}
