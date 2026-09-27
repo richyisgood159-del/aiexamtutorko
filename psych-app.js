@@ -34,7 +34,7 @@ function key(){return state.paperId+'-'+state.qi}
 function answer(){return document.getElementById('answer')?.value?.trim()||''}
 function saveAnswer(){const a=document.getElementById('answer')?.value??'';const k=key();state.answers[k]=a;save();saveProgressAnswer(k,a)}
 function paperView(){
- app.innerHTML=`<button class="back" onclick="home()">← Biology / home</button><div class="hero"><div><span class="eyebrow">PSYCHOLOGY · v13 PEARSON EXAMINER</span><h1>WPS01 · Social & Cognitive Psychology</h1><p>Six complete exam-series stacks with Pearson-specific AO and levels-based marking.</p></div><div class="stat"><b>${papers.length}</b><span>paper stacks</span></div></div><div class="psych-note"><b>Psychology marking:</b> short answers are marked against the exact paper-specific scheme. 8- and 12-mark responses are judged holistically against that question's Pearson level descriptors, AO balance, command word, application and conclusion/judgement requirements.</div><div class="paperGrid">${papers.map(p=>`<article class="paperCard" onclick="openPaper('${p.id}')"><div class="paperTop"><span class="subjectBadge">PSYCHOLOGY</span><span class="ready">● Ready</span></div><h3>${p.title}</h3><p>${p.code}</p><div class="paperMeta"><span>${p.time}</span><span>${p.marks} marks</span></div><button class="primary">Open stack →</button></article>`).join('')}</div>`;
+ app.innerHTML=`<button class="back" onclick="home()">← Biology / home</button><div class="hero"><div><span class="eyebrow">PSYCHOLOGY · v18 PEARSON EXAMINER</span><h1>WPS01 · Social & Cognitive Psychology</h1><p>Six complete exam-series stacks with Pearson-specific AO and levels-based marking.</p></div><div class="stat"><b>${papers.length}</b><span>paper stacks</span></div></div><div class="psych-note"><b>Psychology marking:</b> short answers are marked against the exact paper-specific scheme. 8- and 12-mark responses are judged holistically against that question's Pearson level descriptors, AO balance, command word, application and conclusion/judgement requirements.</div><div class="paperGrid">${papers.map(p=>`<article class="paperCard" onclick="openPaper('${p.id}')"><div class="paperTop"><span class="subjectBadge">PSYCHOLOGY</span><span class="ready">● Ready</span></div><h3>${p.title}</h3><p>${p.code}</p><div class="paperMeta"><span>${p.time}</span><span>${p.marks} marks</span></div><button class="primary">Open stack →</button></article>`).join('')}</div>`;
 }
 function listView(){const p=paper();app.innerHTML=`<button class="back" onclick="back()">← Psychology papers</button><div class="paperHeader"><div><span class="subjectBadge">PSYCHOLOGY</span><h1>${p.title}</h1><p>${p.code} · ${p.time} · ${p.marks} marks</p></div><div class="pdfBtns"><a href="${p.qp}" target="_blank">Question paper ↗</a><a href="${p.ms}" target="_blank">Mark scheme ↗</a></div></div><div class="paper-tools"><span>${Object.keys(state.results).filter(k=>k.startsWith(p.id+'-')).length} / ${p.questions.length} markable parts attempted</span><button class="secondary" onclick="resetPaper()">Reset paper</button></div><div class="questionList">${p.questions.map((x,i)=>{const r=state.results[p.id+'-'+i];return `<div class="qrow" onclick="openQ(${i})"><div class="qnum">${x.n}</div><div class="grow"><b>Question ${x.n}${x.extended?' · Levels-based':''}</b><span>${x.marks} mark${x.marks!==1?'s':''}${x.drawing?' · manual graph/drawing mark':''}</span></div>${r?`<div class="miniScore">${r.score}/${x.marks}</div>`:'<div class="unattempted">Not attempted</div>'}<div class="chev">›</div></div>`}).join('')}</div>`}
 function sourcePath(p,x,kind){return `psych-pages/${p.id}-${kind}-p${kind==='qp'?x.qpPage:x.msPage}.png`}
@@ -67,35 +67,38 @@ async function auditExtended(x,a,first,token,endpoint){
  return first;
 }
 function responseText(d){
- const c=d?.choices?.[0]?.message?.content;
- if(typeof c==='string')return c;
- if(Array.isArray(c))return c.map(v=>typeof v==='string'?v:(v?.text||v?.content||'')).join('\n');
- if(typeof d?.output_text==='string')return d.output_text;
+ const m=d?.choices?.[0]?.message||{};
+ const c=m.content;
+ if(typeof c==='string'&&c.trim())return c;
+ if(Array.isArray(c)){const out=c.map(v=>typeof v==='string'?v:(v?.text||v?.content||'')).join('\n').trim();if(out)return out}
+ if(typeof d?.output_text==='string'&&d.output_text.trim())return d.output_text;
  return '';
 }
 function parseExaminerText(t,x,extended){
- t=String(t||'').trim(); if(!t)throw new Error('Examiner returned an empty response');
+ t=String(t||'').trim(); if(!t)throw new Error('Examiner returned no final answer');
  let obj=null;
- try{const clean=t.replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'');obj=JSON.parse(clean)}catch(e){
-  const m=t.match(/\{[\s\S]*\}/);if(m)try{obj=JSON.parse(m[0])}catch(_){}
- }
+ try{const clean=t.replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'');obj=JSON.parse(clean)}catch(e){const m=t.match(/\{[\s\S]*\}/);if(m)try{obj=JSON.parse(m[0])}catch(_){}}
  const get=(name)=>{if(obj){const keys=Object.keys(obj),k=keys.find(k=>k.toLowerCase()===name.toLowerCase());if(k!=null){const v=obj[k];return Array.isArray(v)?v.join(' | '):String(v??'')}}return line(t,name)};
- let rawScore=obj?.score ?? get('SCORE');
+ let rawScore=obj?.score ?? obj?.mark ?? obj?.marks ?? get('SCORE');
  let num=Number((String(rawScore).match(/-?\d+(?:\.\d+)?/)||[])[0]);
- if(!Number.isFinite(num)){
-  const m=t.match(/(?:score|mark)\s*(?:is|=|:)?\s*(\d+)\s*\/\s*\d+/i)||t.match(/\b(\d+)\s*\/\s*\d+\b/);
-  if(m)num=Number(m[1]);
- }
+ if(!Number.isFinite(num)){const m=t.match(/(?:score|mark|marks)\s*(?:is|=|:)?\s*(\d+)\s*\/\s*\d+/i)||t.match(/\b(\d+)\s*\/\s*\d+\b/);if(m)num=Number(m[1])}
  if(!Number.isFinite(num))throw new Error('Examiner response had no readable mark');
  num=Math.max(0,Math.min(x.marks,Math.round(num)));
  let level=extended?String(obj?.level??get('LEVEL')).match(/[1-4]/)?.[0]||'':'';
  if(extended&&!level&&num>0){const bs=x.marks===12?[[1,3,1],[4,6,2],[7,9,3],[10,12,4]]:[[1,2,1],[3,4,2],[5,6,3],[7,8,4]];level=String((bs.find(([lo,hi])=>num>=lo&&num<=hi)||bs[0])[2])}
  if(extended&&num===0)level='';
  if(extended&&level){const bands=x.marks===12?{1:[1,3],2:[4,6],3:[7,9],4:[10,12]}:{1:[1,2],2:[3,4],3:[5,6],4:[7,8]},band=bands[level];if(band)num=Math.max(band[0],Math.min(band[1],num))}
- const list=n=>{const v=obj?.[n.toLowerCase()]??obj?.[n]??get(n);return Array.isArray(v)?v.map(String).filter(Boolean):split(v)};
- const aoObj=obj?.ao||{};
- const aoVal=n=>String((aoObj[n]??aoObj[n.toLowerCase()]??obj?.[n.toLowerCase()]??get(n))||'');
+ const list=n=>{const low=n.toLowerCase();const v=obj?.[low]??obj?.[n]??get(n);return Array.isArray(v)?v.map(String).filter(Boolean):split(v)};
+ const aoObj=obj?.ao||{}; const aoVal=n=>String((aoObj[n]??aoObj[n.toLowerCase()]??obj?.[n.toLowerCase()]??get(n))||'');
  return {score:num,level,ao:{AO1:aoVal('AO1'),AO2:aoVal('AO2'),AO3:aoVal('AO3')},chains:String((obj?.chains??get('CHAINS'))||''),balance:String((obj?.balance??get('BALANCE'))||''),conclusion:String((obj?.conclusion??get('CONCLUSION'))||''),awarded:list('AWARDED'),missed:list('MISSED'),why:String((obj?.why_level??obj?.why??get('WHY_LEVEL'))||''),blocker:String((obj?.blocker??get('BLOCKER'))||''),next:String((obj?.next??get('NEXT'))||''),improved:String((obj?.improved??get('IMPROVED'))||'')};
+}
+function examinerSchema(x,extended){return {type:'json_schema',json_schema:{name:'pearson_examiner_result',strict:true,schema:{type:'object',properties:{score:{type:'integer',minimum:0,maximum:x.marks},level:extended?{anyOf:[{type:'integer',minimum:1,maximum:4},{type:'null'}]}:{type:'null'},ao1:{type:'string'},ao2:{type:'string'},ao3:{type:'string'},chains:{type:'string'},balance:{type:'string'},conclusion:{type:'string'},awarded:{type:'array',items:{type:'string'}},missed:{type:'array',items:{type:'string'}},why_level:{type:'string'},blocker:{type:'string'},next:{type:'string'},improved:{type:'string'}},required:['score','level','ao1','ao2','ao3','chains','balance','conclusion','awarded','missed','why_level','blocker','next','improved'],additionalProperties:false}}}}
+async function examinerRequest(endpoint,token,body,timeout=45000){
+ const c=new AbortController(),timer=setTimeout(()=>c.abort(),timeout);let res;
+ try{res=await fetch(endpoint,{method:'POST',signal:c.signal,headers:{Authorization:'Bearer '+token,'Content-Type':'application/json','HTTP-Referer':location.origin,'X-Title':'Private Exam Tutor'},body:JSON.stringify(body)})}finally{clearTimeout(timer)}
+ let d=null;try{d=await res.json()}catch(_){ }
+ if(!res.ok)throw new Error(`OpenRouter ${res.status}${d?.error?.message?': '+d.error.message:''}`);
+ return d||{};
 }
 async function markAI(){
  const x=q(),a=answer(); if(!a)return alert('Write an answer first.');
@@ -103,25 +106,28 @@ async function markAI(){
  const k=key(),b=document.getElementById('markBtn'); if(b){b.disabled=true;b.textContent='Checking against Pearson…'}
  const command=(x.questionContext.match(/\b(Evaluate|Assess|Discuss|Explain|Describe|State|Calculate|Give|To what extent)\b/i)||[])[1]||'Answer',extended=!!x.extended;
  const rules=extended?`THIS IS A PEARSON LEVELS-BASED ${x.marks}-MARK RESPONSE. Use the exact supplied descriptors holistically. Judge AO quality, choose best-fit level, then a mark within it. Do not infer unstated material. Scenario AO2 must explicitly use scenario details. Developed evaluation requires linked reasoning. Apply the command word exactly.`:`SHORT-ANSWER MODE. Mark strictly against this exact question-specific Pearson scheme. Respect AO1/AO2/AO3, application, caps, working, units/rounding and any generic-answer restriction. Never invent a marking point.`;
- const prompt=`You are a senior Pearson Edexcel International A Level Psychology WPS01 examiner.\n${rules}\n\nQUESTION ${x.n} — ${x.marks} marks\nCOMMAND WORD: ${command}\nQUESTION/STIMULUS:\n${x.questionContext}\n\nOFFICIAL PEARSON MARK SCHEME/DESCRIPTORS:\n${x.scheme}\n\nSTUDENT ANSWER:\n${a}\n\nReturn one JSON object only, with no markdown. Use exactly these keys: score (integer 0-${x.marks}), level (${extended?'integer 1-4, or null for score 0':'null'}), ao1, ao2, ao3, chains, balance, conclusion, awarded (array of strings formatted as student evidence -> Pearson credit), missed (array), why_level, blocker, next, improved. For a zero-mark answer, awarded may be empty. Do not omit score.`;
+ const prompt=`You are a senior Pearson Edexcel International A Level Psychology WPS01 examiner.\n${rules}\n\nQUESTION ${x.n} — ${x.marks} marks\nCOMMAND WORD: ${command}\nQUESTION/STIMULUS:\n${x.questionContext}\n\nOFFICIAL PEARSON MARK SCHEME/DESCRIPTORS:\n${x.scheme}\n\nSTUDENT ANSWER:\n${a}\n\nReturn the examiner result in the required JSON schema. score is mandatory. awarded must quote or closely identify wording in the student's answer that actually earned credit. For zero marks, awarded can be empty.`;
  const endpoint=(window.EXAM_TUTOR_AI||{}).endpoint||'https://openrouter.ai/api/v1/chat/completions';
- const tries=[
-  {label:'Checking against Pearson…',body:{model:'openrouter/free',temperature:0,max_tokens:extended?900:520,response_format:{type:'json_object'},messages:[{role:'user',content:prompt}]}},
-  {label:'Trying backup examiner…',body:{model:'nvidia/nemotron-3-ultra-550b-a55b:free',temperature:0,max_tokens:extended?900:520,messages:[{role:'user',content:prompt}]}}
+ const schema=examinerSchema(x,extended);
+ const attempts=[
+  {label:'Checking against Pearson…',body:{model:'openrouter/free',temperature:0,max_tokens:extended?1200:750,response_format:schema,plugins:[{id:'response-healing'}],provider:{require_parameters:true,allow_fallbacks:true,sort:'latency'},messages:[{role:'user',content:prompt}]}},
+  {label:'Trying backup examiner…',body:{model:'qwen/qwen3.8-27b:free',temperature:0,max_tokens:extended?1200:750,response_format:schema,plugins:[{id:'response-healing'}],provider:{require_parameters:true,allow_fallbacks:true},messages:[{role:'user',content:prompt}]}},
+  {label:'Trying final examiner…',body:{model:'nvidia/nemotron-3-ultra-550b-a55b:free',temperature:0,max_tokens:extended?1300:800,messages:[{role:'user',content:prompt+'\\nIMPORTANT: Put the numeric score first in your final answer, then the JSON object.'}]}}
  ];
  let last='Examiner unavailable';
- for(let i=0;i<tries.length;i++){
-  try{
-   if(b)b.textContent=tries[i].label;
-   const c=new AbortController(),timer=setTimeout(()=>c.abort(),35000);let res,d;
-   try{res=await fetch(endpoint,{method:'POST',signal:c.signal,headers:{Authorization:'Bearer '+token,'Content-Type':'application/json','HTTP-Referer':location.origin,'X-Title':'Private Exam Tutor'},body:JSON.stringify(tries[i].body)})}finally{clearTimeout(timer)}
-   if(!res.ok){let detail='';try{detail=(await res.json())?.error?.message||''}catch(_){ }throw new Error(`OpenRouter ${res.status}${detail?': '+detail:''}`)}
-   d=await res.json(); const t=responseText(d); const rr=parseExaminerText(t,x,extended);
-   state.results[k]=rr; progress.results[k]=rr; save(); saveSuccessfulResult(k,a,rr); render(); return;
-  }catch(e){last=e?.name==='AbortError'?'Examiner timed out':(e?.message||String(e))}
+ for(const attempt of attempts){
+  try{if(b)b.textContent=attempt.label;const d=await examinerRequest(endpoint,token,attempt.body);const t=responseText(d);const rr=parseExaminerText(t,x,extended);state.results[k]=rr;progress.results[k]=rr;save();saveSuccessfulResult(k,a,rr);render();return}catch(e){last=e?.name==='AbortError'?'Examiner timed out':(e?.message||String(e))}
  }
+ // Last-resort compact recovery: only runs if every full examiner response was unusable.
+ try{
+  if(b)b.textContent='Recovering examiner result…';
+  const compact=`Mark this Pearson WPS01 answer strictly using the supplied scheme. Return ONLY JSON with score, awarded, missed, why_level, next. score MUST be an integer 0-${x.marks}.\nQUESTION: ${x.questionContext}\nSCHEME: ${x.scheme}\nANSWER: ${a}`;
+  const mini={type:'json_schema',json_schema:{name:'mark_recovery',strict:true,schema:{type:'object',properties:{score:{type:'integer',minimum:0,maximum:x.marks},awarded:{type:'array',items:{type:'string'}},missed:{type:'array',items:{type:'string'}},why_level:{type:'string'},next:{type:'string'}},required:['score','awarded','missed','why_level','next'],additionalProperties:false}}};
+  const d=await examinerRequest(endpoint,token,{model:'openrouter/free',temperature:0,max_tokens:420,response_format:mini,plugins:[{id:'response-healing'}],provider:{require_parameters:true,allow_fallbacks:true},messages:[{role:'user',content:compact}]},45000);
+  const base=parseExaminerText(responseText(d),x,extended);base.blocker=base.blocker||'';base.improved=base.improved||'';state.results[k]=base;progress.results[k]=base;save();saveSuccessfulResult(k,a,base);render();return;
+ }catch(e){last=e?.name==='AbortError'?'Examiner timed out':(e?.message||String(e))}
  if(b){b.disabled=false;b.textContent='✦ Mark written answer'}
- alert('Marking did not complete. Your answer is still saved, so you can retry.\n\n'+last);
+ alert('Marking could not complete after all examiner fallbacks. Your answer is saved.\n\n'+last);
 }
 
 function render(){if(!state.paperId||state.view==='papers')paperView();else if(state.view==='list')listView();else viewer()}
