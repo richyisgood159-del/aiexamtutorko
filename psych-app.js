@@ -66,47 +66,63 @@ async function auditExtended(x,a,first,token,endpoint){
  for(const model of models){try{const c=new AbortController(),timer=setTimeout(()=>c.abort(),26000);let res;try{res=await fetch(endpoint,{method:'POST',signal:c.signal,headers:{Authorization:'Bearer '+token,'Content-Type':'application/json','HTTP-Referer':location.origin,'X-Title':'Private Exam Tutor'},body:JSON.stringify({model,temperature:0,max_tokens:1050,provider:{sort:'latency',allow_fallbacks:true},messages:[{role:'user',content:prompt}]})})}finally{clearTimeout(timer)}if(!res.ok)continue;const d=await res.json(),t=typeof d?.choices?.[0]?.message?.content==='string'?d.choices[0].message.content:'';let score=Number((line(t,'SCORE').match(/\d+/)||[])[0]),level=line(t,'LEVEL').match(/[1-4]/)?.[0];if(!Number.isFinite(score)||!level)continue;const bands=x.marks===12?{1:[1,3],2:[4,6],3:[7,9],4:[10,12]}:{1:[1,2],2:[3,4],3:[5,6],4:[7,8]},band=bands[level];score=Math.max(band[0],Math.min(band[1],Math.round(score)));const awarded=split(line(t,'AWARDED'));if(score>0&&!awarded.length)continue;return {score,level,ao:{AO1:line(t,'AO1'),AO2:line(t,'AO2'),AO3:line(t,'AO3')},chains:line(t,'CHAINS'),balance:line(t,'BALANCE'),conclusion:line(t,'CONCLUSION'),awarded,missed:split(line(t,'MISSED')),why:line(t,'WHY_LEVEL'),blocker:line(t,'BLOCKER'),next:line(t,'NEXT'),improved:line(t,'IMPROVED'),audited:true}}catch(e){}}
  return first;
 }
+function responseText(d){
+ const c=d?.choices?.[0]?.message?.content;
+ if(typeof c==='string')return c;
+ if(Array.isArray(c))return c.map(v=>typeof v==='string'?v:(v?.text||v?.content||'')).join('\n');
+ if(typeof d?.output_text==='string')return d.output_text;
+ return '';
+}
+function parseExaminerText(t,x,extended){
+ t=String(t||'').trim(); if(!t)throw new Error('Examiner returned an empty response');
+ let obj=null;
+ try{const clean=t.replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'');obj=JSON.parse(clean)}catch(e){
+  const m=t.match(/\{[\s\S]*\}/);if(m)try{obj=JSON.parse(m[0])}catch(_){}
+ }
+ const get=(name)=>{if(obj){const keys=Object.keys(obj),k=keys.find(k=>k.toLowerCase()===name.toLowerCase());if(k!=null){const v=obj[k];return Array.isArray(v)?v.join(' | '):String(v??'')}}return line(t,name)};
+ let rawScore=obj?.score ?? get('SCORE');
+ let num=Number((String(rawScore).match(/-?\d+(?:\.\d+)?/)||[])[0]);
+ if(!Number.isFinite(num)){
+  const m=t.match(/(?:score|mark)\s*(?:is|=|:)?\s*(\d+)\s*\/\s*\d+/i)||t.match(/\b(\d+)\s*\/\s*\d+\b/);
+  if(m)num=Number(m[1]);
+ }
+ if(!Number.isFinite(num))throw new Error('Examiner response had no readable mark');
+ num=Math.max(0,Math.min(x.marks,Math.round(num)));
+ let level=extended?String(obj?.level??get('LEVEL')).match(/[1-4]/)?.[0]||'':'';
+ if(extended&&!level&&num>0){const bs=x.marks===12?[[1,3,1],[4,6,2],[7,9,3],[10,12,4]]:[[1,2,1],[3,4,2],[5,6,3],[7,8,4]];level=String((bs.find(([lo,hi])=>num>=lo&&num<=hi)||bs[0])[2])}
+ if(extended&&num===0)level='';
+ if(extended&&level){const bands=x.marks===12?{1:[1,3],2:[4,6],3:[7,9],4:[10,12]}:{1:[1,2],2:[3,4],3:[5,6],4:[7,8]},band=bands[level];if(band)num=Math.max(band[0],Math.min(band[1],num))}
+ const list=n=>{const v=obj?.[n.toLowerCase()]??obj?.[n]??get(n);return Array.isArray(v)?v.map(String).filter(Boolean):split(v)};
+ const aoObj=obj?.ao||{};
+ const aoVal=n=>String((aoObj[n]??aoObj[n.toLowerCase()]??obj?.[n.toLowerCase()]??get(n))||'');
+ return {score:num,level,ao:{AO1:aoVal('AO1'),AO2:aoVal('AO2'),AO3:aoVal('AO3')},chains:String((obj?.chains??get('CHAINS'))||''),balance:String((obj?.balance??get('BALANCE'))||''),conclusion:String((obj?.conclusion??get('CONCLUSION'))||''),awarded:list('AWARDED'),missed:list('MISSED'),why:String((obj?.why_level??obj?.why??get('WHY_LEVEL'))||''),blocker:String((obj?.blocker??get('BLOCKER'))||''),next:String((obj?.next??get('NEXT'))||''),improved:String((obj?.improved??get('IMPROVED'))||'')};
+}
 async function markAI(){
  const x=q(),a=answer(); if(!a)return alert('Write an answer first.');
  const token=apiKey(); if(!token)return alert('Connect your OpenRouter key first.'); saveAnswer();
- const b=document.getElementById('markBtn'); if(b){b.disabled=true;b.textContent='Checking against Pearson…'}
- const command=(x.questionContext.match(/\b(Evaluate|Assess|Discuss|Explain|Describe|State|Calculate|Give|To what extent)\b/i)||[])[1]||'Answer';
- const extended=!!x.extended;
- const rules=extended?`THIS IS A PEARSON LEVELS-BASED ${x.marks}-MARK RESPONSE. The exact level descriptors below control the mark. Do not convert individual bullet points into one mark each. First judge AO quality, then choose the best-fit level, then choose a mark within that level. Equal emphasis means one strong AO cannot compensate for a weak required AO. A response cannot enter Level 4 unless the qualities described for Level 4 are sustained across the response. Do not award top level for merely naming strengths/weaknesses. Developed evaluation/assessment requires linked reasoning explaining WHY evidence affects the claim/theory/method. For EVALUATE require developed competing arguments and a supported conclusion when the supplied descriptor requires one. For ASSESS require judgement of significance/value, not a list. For DISCUSS require developed competing arguments and sustained application when AO2 is required; do not invent a conclusion requirement. Scenario AO2 must explicitly connect psychology to details in the scenario. Generic material does not earn scenario application.`:`SHORT-ANSWER MODE. Mark each required element strictly against this exact question-specific Pearson scheme. Respect AO1/AO2/AO3, linked justification, scenario application, caps, calculation working, units/rounding and any 'generic answers score zero' rule. Never invent a marking point.`;
- const prompt=`You are a senior Pearson Edexcel International A Level Psychology WPS01 examiner.\n${rules}\n\nQUESTION ${x.n} — ${x.marks} marks\nCOMMAND WORD: ${command}\nQUESTION/STIMULUS:\n${x.questionContext}\n\nOFFICIAL QUESTION-SPECIFIC PEARSON MARK SCHEME AND LEVEL DESCRIPTORS:\n${x.scheme}\n\nSTUDENT ANSWER:\n${a}\n\nMARKING PROCEDURE:\n1. Read the exact question and identify which AOs are required.\n2. Compare only against the supplied Pearson scheme.\n3. Quote or closely identify the student's actual wording that earns credit; do not infer unstated knowledge.\n4. For an extended response, separately judge AO1/AO2/AO3 quality, reasoning chains, balance/application and conclusion/judgement. Then select the best-fit Pearson level.\n5. Check the level ABOVE your chosen level and state the exact missing quality preventing promotion.\n6. Choose a mark inside the chosen level based on how securely it meets that descriptor.\n7. A polished writing style alone earns no psychology marks.\n\nReturn ONLY these labelled single lines:\nSCORE: integer 0-${x.marks}\nLEVEL: ${extended?'1, 2, 3 or 4':'N/A'}\nAO1: Weak/Partial/Secure/Thorough/N/A - brief reason\nAO2: Weak/Partial/Secure/Thorough/N/A - brief reason\nAO3: Weak/Partial/Secure/Thorough/N/A - brief reason\nCHAINS: Weak/Partial/Secure/N/A - brief reason\nBALANCE: Weak/Partial/Secure/N/A - brief reason\nCONCLUSION: Missing/Weak/Secure/Not required/N/A - brief reason\nAWARDED: student evidence -> Pearson credit; separate items with |\nMISSED: exact missing/developable requirements; separate items with |\nWHY_LEVEL: why this level and mark are best fit\nBLOCKER: exact reason it does not reach the next level, or 'Top level'\nNEXT: one highest-value change\nIMPROVED: concise full-mark answer for this exact question only`;
- const models=extended?['inclusionai/ling-3.0-flash:free','nvidia/nemotron-3-ultra-550b-a55b:free','openrouter/free']:['inclusionai/ling-3.0-flash:free','nvidia/nemotron-3.5-lightning:free','openrouter/free'];
- const endpoint=(window.EXAM_TUTOR_AI||{}).endpoint||'https://openrouter.ai/api/v1/chat/completions'; let last;
- for(let i=0;i<models.length;i++){
+ const k=key(),b=document.getElementById('markBtn'); if(b){b.disabled=true;b.textContent='Checking against Pearson…'}
+ const command=(x.questionContext.match(/\b(Evaluate|Assess|Discuss|Explain|Describe|State|Calculate|Give|To what extent)\b/i)||[])[1]||'Answer',extended=!!x.extended;
+ const rules=extended?`THIS IS A PEARSON LEVELS-BASED ${x.marks}-MARK RESPONSE. Use the exact supplied descriptors holistically. Judge AO quality, choose best-fit level, then a mark within it. Do not infer unstated material. Scenario AO2 must explicitly use scenario details. Developed evaluation requires linked reasoning. Apply the command word exactly.`:`SHORT-ANSWER MODE. Mark strictly against this exact question-specific Pearson scheme. Respect AO1/AO2/AO3, application, caps, working, units/rounding and any generic-answer restriction. Never invent a marking point.`;
+ const prompt=`You are a senior Pearson Edexcel International A Level Psychology WPS01 examiner.\n${rules}\n\nQUESTION ${x.n} — ${x.marks} marks\nCOMMAND WORD: ${command}\nQUESTION/STIMULUS:\n${x.questionContext}\n\nOFFICIAL PEARSON MARK SCHEME/DESCRIPTORS:\n${x.scheme}\n\nSTUDENT ANSWER:\n${a}\n\nReturn one JSON object only, with no markdown. Use exactly these keys: score (integer 0-${x.marks}), level (${extended?'integer 1-4, or null for score 0':'null'}), ao1, ao2, ao3, chains, balance, conclusion, awarded (array of strings formatted as student evidence -> Pearson credit), missed (array), why_level, blocker, next, improved. For a zero-mark answer, awarded may be empty. Do not omit score.`;
+ const endpoint=(window.EXAM_TUTOR_AI||{}).endpoint||'https://openrouter.ai/api/v1/chat/completions';
+ const tries=[
+  {label:'Checking against Pearson…',body:{model:'openrouter/free',temperature:0,max_tokens:extended?900:520,response_format:{type:'json_object'},messages:[{role:'user',content:prompt}]}},
+  {label:'Trying backup examiner…',body:{model:'nvidia/nemotron-3-ultra-550b-a55b:free',temperature:0,max_tokens:extended?900:520,messages:[{role:'user',content:prompt}]}}
+ ];
+ let last='Examiner unavailable';
+ for(let i=0;i<tries.length;i++){
   try{
-   if(b)b.textContent=i?'Trying backup examiner…':'Checking against Pearson…';
-   const c=new AbortController(),timer=setTimeout(()=>c.abort(),extended?(i?22000:18000):(i?15000:12000)); let res;
-   try{res=await fetch(endpoint,{method:'POST',signal:c.signal,headers:{Authorization:'Bearer '+token,'Content-Type':'application/json','HTTP-Referer':location.origin,'X-Title':'Private Exam Tutor'},body:JSON.stringify({model:models[i],temperature:0,max_tokens:extended?900:520,provider:{sort:'latency',allow_fallbacks:true},messages:[{role:'user',content:prompt}]})})}finally{clearTimeout(timer)}
-   if(!res.ok)throw new Error('OpenRouter '+res.status); const d=await res.json(); const t=typeof d?.choices?.[0]?.message?.content==='string'?d.choices[0].message.content:'';
-   let num=Number((line(t,'SCORE').match(/\d+/)||[])[0]); if(!Number.isFinite(num))throw new Error('Incomplete examiner response');
-   let level=extended?(line(t,'LEVEL').match(/[1-4]/)?.[0]||''):'';
-   // Some otherwise-valid examiner replies omit the LEVEL label. Do not throw away a completed mark:
-   // derive the Pearson band from the returned score, then keep enforcing that band's boundaries locally.
-   if(extended && !level && num>0){
-    const scoreBands=x.marks===12?[[1,3,1],[4,6,2],[7,9,3],[10,12,4]]:[[1,2,1],[3,4,2],[5,6,3],[7,8,4]];
-    level=String((scoreBands.find(([lo,hi])=>num>=lo&&num<=hi)||scoreBands[0])[2]);
-   }
-   // Pearson awards 0 as no rewardable material, outside Levels 1-4.
-   if(extended && num===0)level='';
-   // Enforce Pearson level boundaries locally so a model cannot return an impossible score/level pair.
-   if(extended&&level){const bands=x.marks===12?{1:[1,3],2:[4,6],3:[7,9],4:[10,12]}:{1:[1,2],2:[3,4],3:[5,6],4:[7,8]};const band=bands[level];if(band)num=Math.max(band[0],Math.min(band[1],num));}
-   num=Math.max(0,Math.min(x.marks,Math.round(num))); const awarded=split(line(t,'AWARDED')),missed=split(line(t,'MISSED'));
-   if(num>0&&!awarded.length)throw new Error('Examiner gave marks without evidence');
-   let rr={score:num,level,ao:{AO1:line(t,'AO1'),AO2:line(t,'AO2'),AO3:line(t,'AO3')},chains:line(t,'CHAINS'),balance:line(t,'BALANCE'),conclusion:line(t,'CONCLUSION'),awarded,missed,why:line(t,'WHY_LEVEL'),blocker:line(t,'BLOCKER'),next:line(t,'NEXT'),improved:line(t,'IMPROVED')};
-   if(extended){
-    const hasAO=!!(rr.ao.AO1||rr.ao.AO2||rr.ao.AO3), hasExplanation=!!(rr.why||rr.missed.length||rr.awarded.length);
-    if(!hasAO||!hasExplanation)throw new Error('Incomplete detailed examiner feedback');
-   }
-   // One-pass extended marking: same parsed result on iPad and desktop; avoids a second slow network call.
-   // The first examiner already receives the full Pearson descriptors/AO rules and local band enforcement.
-   state.results[key()]=rr;save();render();setTimeout(()=>saveSuccessfulResult(key(),a,rr),0);return;
-  }catch(e){last=e}
+   if(b)b.textContent=tries[i].label;
+   const c=new AbortController(),timer=setTimeout(()=>c.abort(),35000);let res,d;
+   try{res=await fetch(endpoint,{method:'POST',signal:c.signal,headers:{Authorization:'Bearer '+token,'Content-Type':'application/json','HTTP-Referer':location.origin,'X-Title':'Private Exam Tutor'},body:JSON.stringify(tries[i].body)})}finally{clearTimeout(timer)}
+   if(!res.ok){let detail='';try{detail=(await res.json())?.error?.message||''}catch(_){ }throw new Error(`OpenRouter ${res.status}${detail?': '+detail:''}`)}
+   d=await res.json(); const t=responseText(d); const rr=parseExaminerText(t,x,extended);
+   state.results[k]=rr; progress.results[k]=rr; save(); saveSuccessfulResult(k,a,rr); render(); return;
+  }catch(e){last=e?.name==='AbortError'?'Examiner timed out':(e?.message||String(e))}
  }
- if(b){b.disabled=false;b.textContent='✦ Mark written answer'} alert('Marking did not complete. Your answer is still saved, so you can retry.\n\n'+(last?.message||'Examiner unavailable.'));
+ if(b){b.disabled=false;b.textContent='✦ Mark written answer'}
+ alert('Marking did not complete. Your answer is still saved, so you can retry.\n\n'+last);
 }
+
 function render(){if(!state.paperId||state.view==='papers')paperView();else if(state.view==='list')listView();else viewer()}
 render();
