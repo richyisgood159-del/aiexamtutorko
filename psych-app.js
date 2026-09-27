@@ -14,7 +14,7 @@ function saveProgressAnswer(k,a){progress.answers[k]=a;persistProgress()}
 function saveSuccessfulResult(k,a,r){
  progress.answers[k]=a; progress.results[k]=r;
  const arr=progress.attempts[k]||(progress.attempts[k]=[]);
- arr.push({score:r.score,level:r.level||'',answer:a,at:Date.now()});
+ arr.push({score:r.score,level:r.level||'',answer:a,result:JSON.parse(JSON.stringify(r)),at:Date.now()});
  if(arr.length>20)arr.splice(0,arr.length-20);
  persistProgress();
 }
@@ -34,7 +34,7 @@ function key(){return state.paperId+'-'+state.qi}
 function answer(){return document.getElementById('answer')?.value?.trim()||''}
 function saveAnswer(){const a=document.getElementById('answer')?.value??'';const k=key();state.answers[k]=a;save();saveProgressAnswer(k,a)}
 function paperView(){
- app.innerHTML=`<button class="back" onclick="home()">← Biology / home</button><div class="hero"><div><span class="eyebrow">PSYCHOLOGY · v18 PEARSON EXAMINER</span><h1>WPS01 · Social & Cognitive Psychology</h1><p>Six complete exam-series stacks with Pearson-specific AO and levels-based marking.</p></div><div class="stat"><b>${papers.length}</b><span>paper stacks</span></div></div><div class="psych-note"><b>Psychology marking:</b> short answers are marked against the exact paper-specific scheme. 8- and 12-mark responses are judged holistically against that question's Pearson level descriptors, AO balance, command word, application and conclusion/judgement requirements.</div><div class="paperGrid">${papers.map(p=>`<article class="paperCard" onclick="openPaper('${p.id}')"><div class="paperTop"><span class="subjectBadge">PSYCHOLOGY</span><span class="ready">● Ready</span></div><h3>${p.title}</h3><p>${p.code}</p><div class="paperMeta"><span>${p.time}</span><span>${p.marks} marks</span></div><button class="primary">Open stack →</button></article>`).join('')}</div>`;
+ app.innerHTML=`<button class="back" onclick="home()">← Biology / home</button><div class="hero"><div><span class="eyebrow">PSYCHOLOGY · v20 RELIABLE PEARSON EXAMINER</span><h1>WPS01 · Social & Cognitive Psychology</h1><p>Six complete exam-series stacks with Pearson-specific AO and levels-based marking.</p></div><div class="stat"><b>${papers.length}</b><span>paper stacks</span></div></div><div class="psych-note"><b>Psychology marking:</b> short answers are marked against the exact paper-specific scheme. 8- and 12-mark responses are judged holistically against that question's Pearson level descriptors, AO balance, command word, application and conclusion/judgement requirements.</div><div class="paperGrid">${papers.map(p=>`<article class="paperCard" onclick="openPaper('${p.id}')"><div class="paperTop"><span class="subjectBadge">PSYCHOLOGY</span><span class="ready">● Ready</span></div><h3>${p.title}</h3><p>${p.code}</p><div class="paperMeta"><span>${p.time}</span><span>${p.marks} marks</span></div><button class="primary">Open stack →</button></article>`).join('')}</div>`;
 }
 function listView(){const p=paper();app.innerHTML=`<button class="back" onclick="back()">← Psychology papers</button><div class="paperHeader"><div><span class="subjectBadge">PSYCHOLOGY</span><h1>${p.title}</h1><p>${p.code} · ${p.time} · ${p.marks} marks</p></div><div class="pdfBtns"><a href="${p.qp}" target="_blank">Question paper ↗</a><a href="${p.ms}" target="_blank">Mark scheme ↗</a></div></div><div class="paper-tools"><span>${Object.keys(state.results).filter(k=>k.startsWith(p.id+'-')).length} / ${p.questions.length} markable parts attempted</span><button class="secondary" onclick="resetPaper()">Reset paper</button></div><div class="questionList">${p.questions.map((x,i)=>{const r=state.results[p.id+'-'+i];return `<div class="qrow" onclick="openQ(${i})"><div class="qnum">${x.n}</div><div class="grow"><b>Question ${x.n}${x.extended?' · Levels-based':''}</b><span>${x.marks} mark${x.marks!==1?'s':''}${x.drawing?' · manual graph/drawing mark':''}</span></div>${r?`<div class="miniScore">${r.score}/${x.marks}</div>`:'<div class="unattempted">Not attempted</div>'}<div class="chev">›</div></div>`}).join('')}</div>`}
 function sourcePath(p,x,kind){return `psych-pages/${p.id}-${kind}-p${kind==='qp'?x.qpPage:x.msPage}.png`}
@@ -56,7 +56,12 @@ function reviewAnswer(k,r){
  const marked=sentences.map(part=>{if(/^\s*$/.test(part))return esc(part);const words=normWords(part),set=new Set(words);let best=0;for(const ev of evSets){let hit=0;for(const w of ev)if(set.has(w))hit++;best=Math.max(best,hit/Math.max(1,ev.size));}const cls=best>=.58?'credit-highlight':best>=.38?'partial-highlight':'';return cls?`<mark class="${cls}">${esc(part)}</mark>`:esc(part)}).join(' ');
  return `<div class="answer-review"><h3>Your marked answer</h3><div class="review-key"><span><i class="credit-dot"></i> credited evidence</span><span><i class="partial-dot"></i> possible partial match</span></div><div class="review-text">${marked}</div></div>`;
 }
-function attemptHistory(k,x){const arr=progress.attempts[k]||[];if(!arr.length)return '';const first=arr[0].score,last=arr[arr.length-1].score,delta=last-first;return `<div class="attempt-history"><h3>Attempt history</h3><div class="attempt-chips">${arr.map((v,i)=>`<span class="attempt-chip">Attempt ${i+1}: <b>${v.score}/${x.marks}</b>${v.level?` · L${esc(v.level)}`:''}</span>`).join('')}</div>${arr.length>1?`<p class="attempt-change">Change from first attempt: <b>${delta>=0?'+':''}${delta} mark${Math.abs(delta)===1?'':'s'}</b></p>`:''}</div>`}
+function attemptHistory(k,x){
+ const arr=progress.attempts[k]||[];if(!arr.length)return '';
+ const first=arr[0].score,last=arr[arr.length-1].score,delta=last-first;
+ const cards=arr.map((v,i)=>{const rr=v.result||{};return `<details class="attempt-detail"><summary>Attempt ${i+1}: <b>${v.score}/${x.marks}</b>${v.level?` · L${esc(v.level)}`:''}</summary><div class="attempt-answer"><b>Your answer:</b><div>${esc(v.answer||'')}</div>${rr.awarded?.length?`<b>What earned credit:</b><ul>${rr.awarded.map(z=>`<li>${esc(z)}</li>`).join('')}</ul>`:''}${rr.missed?.length?`<b>What was missing:</b><ul>${rr.missed.map(z=>`<li>${esc(z)}</li>`).join('')}</ul>`:''}${rr.why?`<b>Examiner reasoning:</b><div>${esc(rr.why)}</div>`:''}${rr.next?`<b>Best improvement:</b><div>${esc(rr.next)}</div>`:''}</div></details>`}).join('');
+ return `<div class="attempt-history"><h3>Previous answers & attempt history</h3><div class="attempt-chips">${cards}</div>${arr.length>1?`<p class="attempt-change">Change from first attempt: <b>${delta>=0?'+':''}${delta} mark${Math.abs(delta)===1?'':'s'}</b></p>`:''}</div>`
+}
 function resultBox(r,x){const ao=r.ao||{};return `<div class="result"><div class="resultHead"><div><span class="tiny">MARK</span><div class="bigScore">${r.score}<small>/${x.marks}</small></div></div></div>${r.level?`<p><span class="level-badge">Level ${esc(r.level)}</span></p>`:''}${x.extended?`<div class="ao-grid"><div class="ao-card"><b>AO1</b><br>${esc(ao.AO1||'—')}</div><div class="ao-card"><b>AO2</b><br>${esc(ao.AO2||'—')}</div><div class="ao-card"><b>AO3</b><br>${esc(ao.AO3||'—')}</div></div>`:''}${r.awarded?.length?`<h3>What earned credit</h3><ul>${r.awarded.map(v=>`<li>${esc(v)}</li>`).join('')}</ul>`:''}${r.missed?.length?`<h3>What is missing</h3><ul>${r.missed.map(v=>`<li>${esc(v)}</li>`).join('')}</ul>`:''}${x.extended&&(r.chains||r.balance||r.conclusion)?`<div class="extended-checks"><div><b>Reasoning chains</b><span>${esc(r.chains||'—')}</span></div><div><b>Balance / application</b><span>${esc(r.balance||'—')}</span></div><div><b>Conclusion / judgement</b><span>${esc(r.conclusion||'—')}</span></div></div>`:''}${r.why?`<h3>${x.extended?'Why this level/mark':'Examiner reasoning'}</h3><p>${esc(r.why)}</p>`:''}${r.blocker?`<h3>Why it did not reach the next level</h3><p>${esc(r.blocker)}</p>`:''}${r.next?`<h3>Highest-value improvement</h3><p>${esc(r.next)}</p>`:''}${r.improved?`<h3>Full-mark model</h3><p>${esc(r.improved)}</p>`:''}${reviewAnswer(key(),r)}${attemptHistory(key(),x)}<button class="secondary" onclick="toggleScheme()">Compare with Pearson scheme</button></div>`}
 function line(t,n){const m=t.match(new RegExp('(?:^|\\n)'+n+'\\s*:\\s*(.*)','i'));return m?m[1].trim():''}
 function split(v){return String(v||'').split(/\s*\|\s*/).map(s=>s.trim()).filter(s=>s&&!/^(none|n\/a|—)$/i.test(s))}
@@ -68,10 +73,12 @@ async function auditExtended(x,a,first,token,endpoint){
 }
 function responseText(d){
  const m=d?.choices?.[0]?.message||{};
- const c=m.content;
- if(typeof c==='string'&&c.trim())return c;
- if(Array.isArray(c)){const out=c.map(v=>typeof v==='string'?v:(v?.text||v?.content||'')).join('\n').trim();if(out)return out}
- if(typeof d?.output_text==='string'&&d.output_text.trim())return d.output_text;
+ const candidates=[m.content,m.output_text,d?.output_text,d?.response,d?.text];
+ for(const c of candidates){
+  if(typeof c==='string'&&c.trim())return c.trim();
+  if(Array.isArray(c)){const out=c.map(v=>typeof v==='string'?v:(v?.text||v?.content||v?.value||'')).join('\n').trim();if(out)return out}
+  if(c&&typeof c==='object'){try{const out=JSON.stringify(c);if(out&&out!=='{}')return out}catch(_){}}
+ }
  return '';
 }
 function parseExaminerText(t,x,extended){
@@ -106,28 +113,36 @@ async function markAI(){
  const k=key(),b=document.getElementById('markBtn'); if(b){b.disabled=true;b.textContent='Checking against Pearson…'}
  const command=(x.questionContext.match(/\b(Evaluate|Assess|Discuss|Explain|Describe|State|Calculate|Give|To what extent)\b/i)||[])[1]||'Answer',extended=!!x.extended;
  const rules=extended?`THIS IS A PEARSON LEVELS-BASED ${x.marks}-MARK RESPONSE. Use the exact supplied descriptors holistically. Judge AO quality, choose best-fit level, then a mark within it. Do not infer unstated material. Scenario AO2 must explicitly use scenario details. Developed evaluation requires linked reasoning. Apply the command word exactly.`:`SHORT-ANSWER MODE. Mark strictly against this exact question-specific Pearson scheme. Respect AO1/AO2/AO3, application, caps, working, units/rounding and any generic-answer restriction. Never invent a marking point.`;
- const prompt=`You are a senior Pearson Edexcel International A Level Psychology WPS01 examiner.\n${rules}\n\nQUESTION ${x.n} — ${x.marks} marks\nCOMMAND WORD: ${command}\nQUESTION/STIMULUS:\n${x.questionContext}\n\nOFFICIAL PEARSON MARK SCHEME/DESCRIPTORS:\n${x.scheme}\n\nSTUDENT ANSWER:\n${a}\n\nReturn the examiner result in the required JSON schema. score is mandatory. awarded must quote or closely identify wording in the student's answer that actually earned credit. For zero marks, awarded can be empty.`;
+ const prompt=`You are a senior Pearson Edexcel International A Level Psychology WPS01 examiner.\n${rules}\n\nQUESTION ${x.n} — ${x.marks} marks\nCOMMAND WORD: ${command}\nQUESTION/STIMULUS:\n${x.questionContext}\n\nOFFICIAL PEARSON MARK SCHEME/DESCRIPTORS:\n${x.scheme}\n\nSTUDENT ANSWER:\n${a}\n\nReturn the examiner result using the supplied JSON schema. For awarded, quote the student's exact or near-exact wording that earned credit, then state the credit. For missed, state what was required but absent. why_level must explain the mark. next must give one highest-value improvement. improved must be a concise full-mark model answer.`;
  const endpoint=(window.EXAM_TUTOR_AI||{}).endpoint||'https://openrouter.ai/api/v1/chat/completions';
  const schema=examinerSchema(x,extended);
+ const base={temperature:0,max_tokens:extended?1800:1100,response_format:schema,provider:{allow_fallbacks:true,require_parameters:true,sort:'latency'},messages:[{role:'user',content:prompt}]};
+ // All first-line examiners below explicitly support structured outputs. OpenRouter also filters providers with require_parameters.
  const attempts=[
-  {label:'Checking against Pearson…',body:{model:'openrouter/free',temperature:0,max_tokens:extended?1200:750,response_format:schema,plugins:[{id:'response-healing'}],provider:{require_parameters:true,allow_fallbacks:true,sort:'latency'},messages:[{role:'user',content:prompt}]}},
-  {label:'Trying backup examiner…',body:{model:'qwen/qwen3.8-27b:free',temperature:0,max_tokens:extended?1200:750,response_format:schema,plugins:[{id:'response-healing'}],provider:{require_parameters:true,allow_fallbacks:true},messages:[{role:'user',content:prompt}]}},
-  {label:'Trying final examiner…',body:{model:'nvidia/nemotron-3-ultra-550b-a55b:free',temperature:0,max_tokens:extended?1300:800,messages:[{role:'user',content:prompt+'\\nIMPORTANT: Put the numeric score first in your final answer, then the JSON object.'}]}}
+  {label:'Checking against Pearson…',body:{...base,model:'qwen/qwen3.8-27b:free'}},
+  {label:'Trying backup examiner…',body:{...base,model:'google/gemma-4-26b-a4b-it:free'}},
+  {label:'Trying another examiner…',body:{...base,model:'openrouter/free'}},
+  // Last-resort text mode: tolerant parser can still recover a valid result if structured-output capacity is temporarily unavailable.
+  {label:'Final examiner fallback…',body:{model:'nvidia/nemotron-3-ultra-550b-a55b:free',temperature:0,max_tokens:extended?1800:1100,provider:{allow_fallbacks:true,sort:'latency'},messages:[{role:'user',content:prompt+'\\nIf JSON schema mode is unavailable, return a single JSON object with keys score, level, ao1, ao2, ao3, chains, balance, conclusion, awarded, missed, why_level, blocker, next, improved.'}]}}
  ];
- let last='Examiner unavailable';
+ let last='Examiner unavailable',errors=[];
  for(const attempt of attempts){
-  try{if(b)b.textContent=attempt.label;const d=await examinerRequest(endpoint,token,attempt.body);const t=responseText(d);const rr=parseExaminerText(t,x,extended);state.results[k]=rr;progress.results[k]=rr;save();saveSuccessfulResult(k,a,rr);render();return}catch(e){last=e?.name==='AbortError'?'Examiner timed out':(e?.message||String(e))}
+  try{
+   if(b)b.textContent=attempt.label;
+   const d=await examinerRequest(endpoint,token,attempt.body,70000),t=responseText(d);
+   if(!t)throw new Error('Provider returned an empty answer');
+   const rr=parseExaminerText(t,x,extended);
+   if(!rr.why)throw new Error('Provider returned no examiner reasoning');
+   if(!rr.improved)throw new Error('Provider returned no full-mark model');
+   if(rr.score>0&&!rr.awarded.length)throw new Error('Provider returned a positive mark without credited evidence');
+   if(rr.score<x.marks&&!rr.missed.length)throw new Error('Provider did not explain missing marks');
+   if(!rr.next&&rr.score<x.marks)throw new Error('Provider returned no improvement advice');
+   state.results[k]=rr; progress.results[k]=rr; save(); saveSuccessfulResult(k,a,rr); render(); return;
+  }catch(e){last=e?.name==='AbortError'?'Examiner timed out':(e?.message||String(e));errors.push(last)}
  }
- // Last-resort compact recovery: only runs if every full examiner response was unusable.
- try{
-  if(b)b.textContent='Recovering examiner result…';
-  const compact=`Mark this Pearson WPS01 answer strictly using the supplied scheme. Return ONLY JSON with score, awarded, missed, why_level, next. score MUST be an integer 0-${x.marks}.\nQUESTION: ${x.questionContext}\nSCHEME: ${x.scheme}\nANSWER: ${a}`;
-  const mini={type:'json_schema',json_schema:{name:'mark_recovery',strict:true,schema:{type:'object',properties:{score:{type:'integer',minimum:0,maximum:x.marks},awarded:{type:'array',items:{type:'string'}},missed:{type:'array',items:{type:'string'}},why_level:{type:'string'},next:{type:'string'}},required:['score','awarded','missed','why_level','next'],additionalProperties:false}}};
-  const d=await examinerRequest(endpoint,token,{model:'openrouter/free',temperature:0,max_tokens:420,response_format:mini,plugins:[{id:'response-healing'}],provider:{require_parameters:true,allow_fallbacks:true},messages:[{role:'user',content:compact}]},45000);
-  const base=parseExaminerText(responseText(d),x,extended);base.blocker=base.blocker||'';base.improved=base.improved||'';state.results[k]=base;progress.results[k]=base;save();saveSuccessfulResult(k,a,base);render();return;
- }catch(e){last=e?.name==='AbortError'?'Examiner timed out':(e?.message||String(e))}
  if(b){b.disabled=false;b.textContent='✦ Mark written answer'}
- alert('Marking could not complete after all examiner fallbacks. Your answer is saved.\n\n'+last);
+ const unique=[...new Set(errors)].slice(-3).join(' / ');
+ alert('AI marking could not complete because every free examiner failed or returned incomplete data. Your answer is saved and no fake mark was recorded.\n\nDetails: '+(unique||last)+'\n\nYou can still open the Pearson scheme, or tap Mark written answer to retry.');
 }
 
 function render(){if(!state.paperId||state.view==='papers')paperView();else if(state.view==='list')listView();else viewer()}
