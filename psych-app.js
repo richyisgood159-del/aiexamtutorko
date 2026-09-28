@@ -116,7 +116,13 @@ async function markAI(){
  const prompt=`You are a senior Pearson Edexcel International A Level Psychology WPS01 examiner.\n${rules}\n\nQUESTION ${x.n} — ${x.marks} marks\nCOMMAND WORD: ${command}\nQUESTION/STIMULUS:\n${x.questionContext}\n\nOFFICIAL PEARSON MARK SCHEME/DESCRIPTORS:\n${x.scheme}\n\nSTUDENT ANSWER:\n${a}\n\nReturn the examiner result using the supplied JSON schema. For awarded, quote the student's exact or near-exact wording that earned credit, then state the credit. For missed, state what was required but absent. why_level must explain the mark. next must give one highest-value improvement. improved must be a concise full-mark model answer.`;
  const endpoint=(window.EXAM_TUTOR_AI||{}).endpoint||'https://openrouter.ai/api/v1/chat/completions';
  const schema=examinerSchema(x,extended);
- const base={temperature:0,max_tokens:extended?1800:1100,response_format:schema,provider:{allow_fallbacks:true,require_parameters:true,sort:'latency'},messages:[{role:'user',content:prompt}]};
+ // iPad fast path: fail over much sooner and prioritize sustained generation speed.
+ // The marking rubric/parser/feedback requirements remain identical.
+ const isIPad=/iPad/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+ const requestTimeout=isIPad?24000:40000;
+ const maxOut=extended?(isIPad?1250:1500):(isIPad?700:900);
+ const providerPrefs={allow_fallbacks:true,require_parameters:true,sort:isIPad?'throughput':'latency'};
+ const base={temperature:0,max_tokens:maxOut,response_format:schema,provider:providerPrefs,messages:[{role:'user',content:prompt}]};
  // All first-line examiners below explicitly support structured outputs. OpenRouter also filters providers with require_parameters.
  const attempts=[
   {label:'Checking against Pearson…',body:{...base,model:'qwen/qwen3.8-27b:free'}},
@@ -129,7 +135,7 @@ async function markAI(){
  for(const attempt of attempts){
   try{
    if(b)b.textContent=attempt.label;
-   const d=await examinerRequest(endpoint,token,attempt.body,70000),t=responseText(d);
+   const d=await examinerRequest(endpoint,token,attempt.body,requestTimeout),t=responseText(d);
    if(!t)throw new Error('Provider returned an empty answer');
    const rr=parseExaminerText(t,x,extended);
    if(!rr.why)throw new Error('Provider returned no examiner reasoning');
