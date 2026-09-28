@@ -112,20 +112,30 @@ async function markAI(){
  const token=apiKey(); if(!token)return alert('Connect your OpenRouter key first.'); saveAnswer();
  const k=key(),b=document.getElementById('markBtn'); if(b){b.disabled=true;b.textContent='Checking against Pearson…'}
  const command=(x.questionContext.match(/\b(Evaluate|Assess|Discuss|Explain|Describe|State|Calculate|Give|To what extent)\b/i)||[])[1]||'Answer',extended=!!x.extended;
- const rules=extended?`THIS IS A PEARSON LEVELS-BASED ${x.marks}-MARK RESPONSE. Use the exact supplied descriptors holistically. Judge AO quality, choose best-fit level, then a mark within it. Do not infer unstated material. Scenario AO2 must explicitly use scenario details. Developed evaluation requires linked reasoning. Apply the command word exactly.`:`SHORT-ANSWER MODE. Mark strictly against this exact question-specific Pearson scheme. Respect AO1/AO2/AO3, application, caps, working, units/rounding and any generic-answer restriction. Never invent a marking point.`;
- const prompt=`You are a senior Pearson Edexcel International A Level Psychology WPS01 examiner.\n${rules}\n\nQUESTION ${x.n} — ${x.marks} marks\nCOMMAND WORD: ${command}\nQUESTION/STIMULUS:\n${x.questionContext}\n\nOFFICIAL PEARSON MARK SCHEME/DESCRIPTORS:\n${x.scheme}\n\nSTUDENT ANSWER:\n${a}\n\nReturn the examiner result using the supplied JSON schema. For awarded, quote the student's exact or near-exact wording that earned credit, then state the credit. For missed, state what was required but absent. why_level must explain the mark. next must give one highest-value improvement. improved must be a concise full-mark model answer.`;
  const endpoint=(window.EXAM_TUTOR_AI||{}).endpoint||'https://openrouter.ai/api/v1/chat/completions';
- const schema=examinerSchema(x,extended);
  const isIPad=/iPad/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
- const base={temperature:0,max_tokens:extended?1800:1100,response_format:schema,provider:{allow_fallbacks:true,require_parameters:true,sort:'latency'},messages:[{role:'user',content:prompt}]};
- // All first-line examiners below explicitly support structured outputs. OpenRouter also filters providers with require_parameters.
- const attempts=[
-  {label:'Checking against Pearson…',timeout:isIPad?18000:70000,body:{...base,model:'qwen/qwen3.8-27b:free'}},
-  {label:'Trying backup examiner…',timeout:isIPad?18000:70000,body:{...base,model:'google/gemma-4-26b-a4b-it:free'}},
-  {label:'Trying another examiner…',timeout:isIPad?18000:70000,body:{...base,model:'openrouter/free'}},
-  // Last-resort text mode: tolerant parser can still recover a valid result if structured-output capacity is temporarily unavailable.
-  {label:'Final examiner fallback…',timeout:isIPad?40000:70000,body:{model:'nvidia/nemotron-3-ultra-550b-a55b:free',temperature:0,max_tokens:extended?1800:1100,provider:{allow_fallbacks:true,sort:'latency'},messages:[{role:'user',content:prompt+'\\nIf JSON schema mode is unavailable, return a single JSON object with keys score, level, ao1, ao2, ao3, chains, balance, conclusion, awarded, missed, why_level, blocker, next, improved.'}]}}
- ];
+ const shortFast=!extended&&x.marks<=4;
+ let prompt,attempts;
+ if(shortFast){
+  // FAST PATH: short questions do not need the expensive levels/AO report used by 8/12 markers.
+  prompt=`Pearson Edexcel IAL Psychology WPS01 examiner. Mark ONLY against the exact scheme below. Do not invent credit.\nQ (${x.marks} marks): ${x.questionContext}\nSCHEME: ${x.scheme}\nANSWER: ${a}\nReturn ONLY compact JSON: {"score":0,"level":null,"ao1":"","ao2":"","ao3":"","chains":"","balance":"","conclusion":"","awarded":["student wording -> credit"],"missed":["missing point"],"why_level":"one short reason","blocker":"","next":"one short improvement","improved":"concise full-mark answer"}. Keep every string brief.`;
+  const fastBase={temperature:0,max_tokens:420,provider:{allow_fallbacks:true,sort:'latency'},messages:[{role:'user',content:prompt}]};
+  attempts=[
+   {label:'⚡ Fast marking…',timeout:isIPad?12000:18000,body:{...fastBase,model:'openrouter/free'}},
+   {label:'⚡ Fast backup…',timeout:isIPad?18000:26000,body:{...fastBase,model:'nvidia/nemotron-3-ultra-550b-a55b:free'}}
+  ];
+ }else{
+  const rules=extended?`THIS IS A PEARSON LEVELS-BASED ${x.marks}-MARK RESPONSE. Use the exact supplied descriptors holistically. Judge AO quality, choose best-fit level, then a mark within it. Do not infer unstated material. Scenario AO2 must explicitly use scenario details. Developed evaluation requires linked reasoning. Apply the command word exactly.`:`SHORT-ANSWER MODE. Mark strictly against this exact question-specific Pearson scheme. Respect AO1/AO2/AO3, application, caps, working, units/rounding and any generic-answer restriction. Never invent a marking point.`;
+  prompt=`You are a senior Pearson Edexcel International A Level Psychology WPS01 examiner.\n${rules}\n\nQUESTION ${x.n} — ${x.marks} marks\nCOMMAND WORD: ${command}\nQUESTION/STIMULUS:\n${x.questionContext}\n\nOFFICIAL PEARSON MARK SCHEME/DESCRIPTORS:\n${x.scheme}\n\nSTUDENT ANSWER:\n${a}\n\nReturn the examiner result using the supplied JSON schema. For awarded, quote the student's exact or near-exact wording that earned credit, then state the credit. For missed, state what was required but absent. why_level must explain the mark. next must give one highest-value improvement. improved must be a concise full-mark model answer.`;
+  const schema=examinerSchema(x,extended);
+  const base={temperature:0,max_tokens:extended?1800:850,response_format:schema,provider:{allow_fallbacks:true,require_parameters:true,sort:'latency'},messages:[{role:'user',content:prompt}]};
+  attempts=[
+   {label:'Checking against Pearson…',timeout:isIPad?18000:70000,body:{...base,model:'qwen/qwen3.8-27b:free'}},
+   {label:'Trying backup examiner…',timeout:isIPad?18000:70000,body:{...base,model:'google/gemma-4-26b-a4b-it:free'}},
+   {label:'Trying another examiner…',timeout:isIPad?18000:70000,body:{...base,model:'openrouter/free'}},
+   {label:'Final examiner fallback…',timeout:isIPad?40000:70000,body:{model:'nvidia/nemotron-3-ultra-550b-a55b:free',temperature:0,max_tokens:extended?1800:850,provider:{allow_fallbacks:true,sort:'latency'},messages:[{role:'user',content:prompt+'\\nIf JSON schema mode is unavailable, return a single JSON object with keys score, level, ao1, ao2, ao3, chains, balance, conclusion, awarded, missed, why_level, blocker, next, improved.'}]}}
+  ];
+ }
  let last='Examiner unavailable',errors=[];
  for(const attempt of attempts){
   try{
@@ -143,7 +153,7 @@ async function markAI(){
  }
  if(b){b.disabled=false;b.textContent='✦ Mark written answer'}
  const unique=[...new Set(errors)].slice(-3).join(' / ');
- alert('AI marking could not complete because every free examiner failed or returned incomplete data. Your answer is saved and no fake mark was recorded.\n\nDetails: '+(unique||last)+'\n\nYou can still open the Pearson scheme, or tap Mark written answer to retry.');
+ alert('AI marking could not complete because every free examiner failed or returned incomplete data. Your answer is saved and no fake mark was recorded.\\n\\nDetails: '+(unique||last)+'\\n\\nYou can still open the Pearson scheme, or tap Mark written answer to retry.');
 }
 
 function render(){if(!state.paperId||state.view==='papers')paperView();else if(state.view==='list')listView();else viewer()}
