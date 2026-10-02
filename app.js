@@ -1,271 +1,255 @@
-const papers=[
- {id:'wbi11-2601',title:'January 2026 — Unit 1',code:'WBI11/01',date:'9 Jan 2026',time:'1h 30m',marks:80,qp:'biology-u1-jan26-qp.pdf',ms:'biology-u1-jan26-ms.pdf'},
- {id:'wbi11a-2601',title:'January 2026 — Unit 1 (01A · separate answer book)',code:'WBI11/01A',date:'9 Jan 2026',time:'1h 30m',marks:80,qp:'biology-u1a-jan26-qp.pdf',ms:'biology-u1a-jan26-ms.pdf'}
-];
-const qs=[
- {n:'1',marks:5,q:'Complete the description of how substances move through the cell membrane.',scheme:[
-  ['phospholipids / phospholipid bilayer / hydrophobic or non-polar fatty acid tails',['phospholipid','bilayer','hydrophobic','non-polar','fatty acid tails']],['facilitated diffusion',['facilitated diffusion']],['active transport',['active transport']],['ATP / carrier proteins / protein pumps / energy',['atp','carrier protein','protein pump','energy']],['endocytosis',['endocytosis']]
- ],note:'Five independent marking points. “Diffusion” alone is not accepted for facilitated diffusion.'},
- {n:'2(a)(i)',marks:1,q:'Whose law can be used to calculate the rate of diffusion?',type:'mcq',options:['A — Benedict’s','B — Fick’s','C — Meselson’s','D — Stahl’s'],correct:'B'},
- {n:'2(a)(ii)',marks:3,q:'Explain how the rate of diffusion through gas exchange surfaces is affected by cystic fibrosis.',scheme:[['thick / sticky mucus is produced',['thick mucus','sticky mucus']],['mucus blocks / narrows / remains in the airways or alveoli',['block','narrow','airway','alveoli','bronchi','bronchiole','trachea']],['reduced oxygen / carbon dioxide concentration gradient',['concentration gradient','oxygen','carbon dioxide']],['reduced rate of diffusion / gas exchange',['rate of diffusion','gas exchange','diffusion']]],cap:3,note:'Award any three. Increased diffusion distance/thicker alveolar walls or reduced alveolar surface area may also be creditworthy.'},
- {n:'2(b)',marks:3,q:'Describe how one named method of prenatal testing can be used to detect cystic fibrosis.',groups:[[['amniocentesis',['amniocentesis']],['amniotic fluid / cells from amniotic fluid',['amniotic fluid','amniotic sac']],['analyse for the CF mutation / faulty allele',['mutation','faulty allele','defective allele']]],[[ 'chorionic villus sampling / CVS',['chorionic villus','cvs']],['placental / chorionic cells or tissue',['placenta','chorion','chorionic villi']],['analyse for the CF mutation / faulty allele',['mutation','faulty allele','defective allele']]],[[ 'PUBS / cordocentesis',['pubs','cordocentesis','percutaneous umbilical']],['blood from the umbilical cord',['blood','umbilical cord']],['analyse for the CF mutation / faulty allele',['mutation','faulty allele','defective allele']]]]},
- {n:'3(a)',marks:1,q:'Name one obesity indicator other than BMI.',alts:['skin fold thickness','waist-to-hip ratio','waist circumference','percentage body fat'],keys:['skin fold','waist to hip','waist-to-hip','waist circumference','waist measurement','percentage body fat']},
- {n:'3(b)(i)',marks:1,q:'Determine the weight category of a person who is 160 cm tall with body mass of 76 kg.',alts:['overweight'],keys:['overweight']},
- {n:'3(b)(ii)',marks:3,q:'Explain how a person with a BMI of 25.2 could change their diet to reduce their risk of coronary heart disease.',scheme:[['reduce cholesterol / saturated fat intake and link this to reduced atheroma formation',['saturated fat','cholesterol','atheroma','plaque','atherosclerosis']],['reduce salt intake and link this to blood pressure / endothelial damage',['salt','blood pressure','endothelial']],['increase antioxidants and link to reduced free radicals',['antioxidant','free radical']],['increase fibre / roughage and link to reduced cholesterol absorption',['fibre','roughage','cholesterol absorption']],['slightly reduce calories / sugar / fat because the person is only slightly overweight',['calorie','sugar','portion','slightly overweight']]],cap:3},
- {n:'4(a)(i)',marks:2,q:'Complete the fruit-fly genotype/phenotype table for eye colour and sex.',scheme:[['all eye colours correctly identified across the genotypes',['red','white']],['all sexes correctly identified across the genotypes',['female','male']]],note:'The official table awards one mark for all colours correct and one for all sexes correct.'},
- {n:'4(a)(ii)',marks:1,q:'In a population of 2000 fruit flies, the ratio of red eyes to white eyes was 4:1. How many had red eyes?',type:'mcq',options:['A — 400','B — 500','C — 1500','D — 1600'],correct:'D'},
- {n:'4(b)',marks:3,q:'Compare and contrast the types of sex chromosomes found in female and male Komodo dragons with those found in humans.',scheme:[['both species have two different types of sex chromosome',['different','sex chromosome']],['both have one sex with two of the same chromosomes and one sex with different chromosomes',['same','different','chromosome']],['Komodo males have identical chromosomes whereas human females have identical chromosomes (or equivalent comparison)',['komodo','male','identical','human','female']]]},
- {n:'5(a)',marks:1,q:'State the meaning of the term risk factor.',scheme:[['a factor / characteristic that increases the likelihood or probability of an event, disease or condition',['factor','characteristic','likelihood','probability','chance','disease','condition']]]},
- {n:'5(b)',marks:1,q:'Which are non-lifestyle risk factors associated with coronary heart disease?',type:'mcq',options:['A — age and diet high in cholesterol','B — age and sex','C — inactivity and diet high in cholesterol','D — sex and inactivity'],correct:'B'},
- {n:'5(c)',marks:2,q:'Describe the relationship between the number of cigarettes smoked per day and the relative risk of CHD.',scheme:[['overall, more cigarettes smoked is associated with greater relative risk of CHD',['increase','positive correlation','greater risk']],['the relationship is non-linear',['non-linear','nonlinear']],['there is a relative risk of CHD even with no smoking',['no smoking','zero cigarettes','without smoking']]],cap:2},
- {n:'5(d)(i)',marks:1,q:'A person smoked 5 cigarettes a day for 12 years. Calculate the mean number of cigarettes smoked per year, using 365.25 days per year.',alts:['1826','1,826'],keys:['1826','1,826']},
- {n:'5(d)(ii)',marks:3,q:'Explain why this person’s perception of their risk of CHD is likely to be different from their actual risk.',scheme:[['may underestimate / misreport / not know the number of cigarettes smoked',['underestimate','under-estimate','lie','not know','misreport']],['may not smoke the same number every day',['same number','each day','every day','not everyday']],['may not know exactly how long they have smoked',['how long','years','duration']],['may not realise how important smoking is as a risk factor',['not realise','risk factor','awareness','education']]],cap:3},
- {n:'6(a)',marks:2,q:'Draw a triglyceride using the glycerol, fatty-acid and ester-bond shapes shown in the paper.',scheme:[['one glycerol, three fatty acids and three bonds are shown',['glycerol','three fatty','3 fatty','three bonds','3 bonds']],['all components are joined together correctly',['joined','attached','ester']]],note:'Drawing question: draw normally, then reveal the official Pearson mark scheme and self-mark. AI marking is intentionally disabled for diagrams.'},
- {n:'6(b)',marks:1,q:'Which row is correct for a saturated fatty acid?',type:'mcq',options:['A','B','C','D'],correct:'A'},
- {n:'6(c)(i)',marks:1,q:'Estimate the melting point of a saturated fatty acid with a chain length of ten carbons.',scheme:[['a whole-number estimate between 15 °C and 50 °C',['15','20','25','30','35','40','45','50']]]},
- {n:'6(c)(ii)',marks:4,q:'Comment on the relationships between fatty-acid melting point and carbon number, presence/absence of C=C bonds, and number of C=C bonds.',scheme:[['for saturated fatty acids, melting point increases as chain length / carbon number increases',['chain length','carbon','increase']],['the saturated fatty acids shown are liquid above the relevant temperature threshold',['saturated','liquid']],['no clear relationship between chain length and melting point for the unsaturated fatty acids shown',['unsaturated','no relationship','no correlation']],['saturated fatty acids have higher melting points than unsaturated fatty acids',['saturated','higher','unsaturated']],['melting point decreases as the number of C=C double bonds increases',['double bond','decrease']]],cap:4},
- {n:'6(c)(iii)',marks:1,q:'Which row correctly assigns the melting points 3 °C, −6 °C and −10 °C to canola, peanut and sesame oils?',type:'mcq',options:['A','B','C','D'],correct:'C'},
- {n:'7(a)(i)',marks:1,q:'Which are the products when lactose is digested?',type:'mcq',options:['A — fructose and sucrose','B — galactose and glucose','C — galactose and sucrose','D — glucose and fructose'],correct:'B'},
- {n:'7(a)(ii)',marks:2,q:'Explain why lactase speeds up the rate of digestion of lactose.',scheme:[['lactase / enzymes act as catalysts',['catalyst','catalyse']],['lactase lowers the activation energy',['activation energy']],['this enables glycosidic bonds between glucose and galactose to be broken',['glycosidic','glucose','galactose']]],cap:2},
- {n:'7(b)',marks:1,q:'68% of a world population of 8.1 × 10⁹ people were lactose intolerant. How many people is this, to two significant figures?',type:'mcq',options:['A — 2.59 × 10⁹','B — 2.6 × 10⁹','C — 5.5 × 10⁹','D — 5.51 × 10⁹'],correct:'C'},
- {n:'7(c)',marks:6,q:'Explain why lactase activity changes when it is trapped in alginate beads. Use the pH and temperature graphs in the paper.',level:true,scheme:[['use relevant comparisons from the pH graph, including range/optimum/activity',['ph','optimum','range']],['explain pH effects using H⁺ concentration, R-group ionisation, bonds and active-site shape',['hydrogen ion','r group','bond','active site']],['explain how alginate can stabilise/protect enzyme structure at different pH values',['alginate','stabilise','protect','shape']],['use relevant comparisons from the temperature graph, including optimum/activity',['temperature','optimum']],['explain temperature effects using kinetic energy/collisions and denaturation/R-group vibration',['kinetic energy','collision','denature','vibrate']],['explain how alginate can stabilise the active site / reduce R-group movement at higher temperatures',['alginate','active site','stabilise','movement']]],note:'This is a 6-mark level-of-response question. The AI examiner should judge scientific reasoning, use of both graphs and logical structure, not simply count keywords.'},
- {n:'8(a)(i)',marks:2,q:'Describe two conclusions from the graph showing percentage of living cancer cells after treatment with different concentrations of Sch B.',scheme:[['increasing Sch B concentration decreases the percentage/number of living cancer cells',['increase','concentration','decrease','living cancer']],['an effect is seen only above the lowest concentrations / minimum effective concentration is around 6.25 μmol dm⁻³',['6.25','minimum','effect']],['even the highest concentration does not destroy all cancer cells',['highest','not all','cancer cells']]],cap:2},
- {n:'8(a)(ii)',marks:1,q:'State why DNA synthesis was used to assess the ability of cancer cells to divide.',scheme:[['DNA must be replicated / synthesised before cell division or mitosis',['dna','replicated','replication','synthesis','cell division','mitosis']]]},
- {n:'8(b)(i)',marks:1,q:'Each mouse received 200 μl of a cell suspension at 1 × 10⁷ cells per cm³. Calculate the number of cells injected.',alts:['2 × 10^6','2x10^6','2000000','2,000,000','2 million'],keys:['2 × 10','2x10','2000000','2,000,000','2 million']},
- {n:'8(b)(ii)',marks:1,q:'Suggest what the control group of mice was treated with.',scheme:[['the solvent/liquid used to dissolve the drug, e.g. water or saline',['solvent','water','saline','salt solution','liquid']]]},
- {n:'8(b)(iii)',marks:2,q:'Calculate the actual volume of the tumour from the Sch B-treated mouse using the formula and dimensions in the paper.',scheme:[['correct volume calculation / working using the stated formula',['volume','π','pi','10']],['final value in the accepted range, approximately 600–681 mm³',['600','628','630','650','680','681']]],note:'The official scheme accepts several values because the longest diameter is measured from the printed image.'},
- {n:'8(b)(iv)',marks:2,q:'Explain why the tumour-volume formula may not give accurate values.',scheme:[['tumours are not uniform / regular in shape',['not uniform','irregular','not regular']],['the measured width/length depends on where the measurement is taken',['where','measurement','width','length']],['the ruler/equipment measures only to limited precision in mm',['ruler','mm','precision']],['the formula may not be appropriate for the tumour shape',['formula','appropriate','shape']]],cap:2},
- {n:'8(c)(i)',marks:4,q:'Explain how a DNA mutation can result in glycine being replaced by aspartate in the polypeptide.',scheme:[['the DNA mutation is a substitution',['substitution']],['the change is transcribed/copied into mRNA',['mrna','transcription','copied']],['the altered codon/triplet codes for aspartate',['codon','triplet','aspartate']],['a tRNA carrying aspartate binds to the altered codon',['trna','aspartate','anticodon']],['aspartate is joined into the polypeptide by peptide bonds',['peptide bond','polypeptide','aspartate']]],cap:4},
- {n:'8(c)(ii)',marks:2,q:'Suggest why it is difficult to develop drugs that target only the polypeptide synthesised from the gene with the G12D mutation.',scheme:[['the target site is only one amino acid / aspartate',['one amino acid','aspartate']],['the drug may fail to bind specifically to that aspartate',['bind','aspartate','specific']],['other proteins also contain aspartate',['other proteins','aspartate']],['therefore the drug could affect other proteins',['affect other proteins','other proteins']]],cap:2},
- {n:'9(a)',marks:6,q:'Explain how development of a DVT in the leg can result in death from a pulmonary embolism. Use the diagram and your knowledge of clotting and circulation.',level:true,scheme:[['formation of the leg clot: impaired venous return while sitting, reduced skeletal-muscle pump and blood pooling around valves',['sitting','skeletal muscle','valve','blood flow']],['blood-clotting pathway: platelets/thromboplastin → prothrombin/thrombin → fibrinogen/fibrin → trapped cells',['platelet','thromboplastin','thrombin','prothrombin','fibrin','fibrinogen']],['part of the clot breaks away and travels through veins/vena cava/right side of heart to the pulmonary artery',['breaks','vena cava','right atrium','right ventricle','pulmonary artery']],['embolus blocks pulmonary blood flow so deoxygenated blood cannot reach the lungs for oxygenation',['block','pulmonary','lungs','oxygen']],['reduced oxygen delivery prevents sufficient aerobic respiration/ATP and can cause fatal organ damage',['oxygenated','aerobic respiration','energy','atp','death']]],note:'This is a 6-mark level-of-response question. The official scheme rewards linked explanations across multiple aspects rather than isolated facts.'},
- {n:'9(b)(i)',marks:2,q:'Explain why people taking anticoagulants must monitor their blood clotting time.',scheme:[['if dose is too high, clotting time is too long / blood clots too slowly',['too high','too long','slow']],['this can cause excessive or uncontrolled blood loss / haemorrhage',['blood loss','bleeding','haemorrhage']],['if dose is too low, clotting time is too short / blood clots too quickly',['too low','too short','fast']],['this raises risk of DVT, embolism, stroke or heart attack',['dvt','embolism','stroke','heart attack']]],cap:2},
- {n:'9(b)(ii)',marks:2,q:'Explain why the copper particles will almost stop moving as the blood clots.',scheme:[['the blood/clot becomes thicker, sticky or forms a fibrin mesh',['thicker','sticky','fibrin','mesh']],['this creates resistance or traps the copper particles so they cannot move freely',['resistance','trapped','stuck','movement']]]},
- {n:'9(b)(iii)',marks:1,q:'Determine the blood clotting time in the smartphone recording using the end time shown on the graph.',alts:['19 seconds','19 s','19','19.0'],keys:['19']},
- {n:'9(b)(iv)',marks:2,q:'Suggest why an end time halfway between points A and B was used to determine blood clotting time.',scheme:[['the particles do not all stop moving at exactly the same time / there is no clear single endpoint',['not all','same time','no clear','end point','endpoint']],['there is a large/rapid change in particle movement before movement almost stops',['rapid','large change','decrease','movement']],['the halfway point provides a representative middle/average endpoint',['halfway','midpoint','middle','average','mean','median']]],cap:2},
- {n:'9(b)(v)',marks:2,q:'Comment on the blood clotting times measured using the smartphone and conventional methods.',scheme:[['there is a positive correlation / the two methods give comparable trends',['positive correlation','both increase','comparable']],['the methods do not give exactly the same clotting times',['not same','difference','do not give']],['at lower clotting times the smartphone method records higher values',['lower','smartphone','higher']],['at higher clotting times the smartphone method records lower values',['higher','smartphone','lower']]],cap:2}
-];
+(() => {
+  'use strict';
+  const VERSION = 'rebuild-1';
+  const STORE_KEY = 'aiExamTutorPsychProgress:'+VERSION;
+  const KEY_KEY = 'aiExamTutorOpenRouterKey';
+  const papers = (window.PSY_PAPERS || []).slice().sort((a,b)=>a.year-b.year || a.code.localeCompare(b.code));
+  const $ = id => document.getElementById(id);
+  const els = {};
+  ['sidebar','paperList','questionFilter','markFilter','paperEyebrow','questionTitle','questionMeta','sourceArea','assetStatus','answerBox','wordCount','drawToggle','drawWrap','drawCanvas','undoDraw','clearDraw','markBtn','schemeBtn','clearBtn','markProgress','markStatus','markSubstatus','countdown','prevBtn','nextBtn','randomBtn','starBtn','scoreBig','latency','aoRow','feedback','schemePanel','schemeImages','openMsPdf','attemptCount','attempts','settingsModal','settingsBtn','closeSettings','saveSettings','apiKeyInput','exportBtn','resetBtn','toast','statDone','statAvg','statStreak','mobilePapers','studyModeBtn'].forEach(k=>els[k]=$(k));
 
-const cropMap={"qp":{"1":["1-1.png"],"2(a)(i)":["2-a-i-1.png"],"2(a)(ii)":["2-a-ii-1.png"],"2(b)":["2-b-1.png"],"3(a)":["3-a-1.png"],"3(b)(i)":["3-b-i-1.png"],"3(b)(ii)":["3-b-ii-1.png"],"4(a)(i)":["4-a-i-1.png"],"4(a)(ii)":["4-a-ii-1.png"],"4(b)":["4-b-1.png"],"5(a)":["5-a-1.png"],"5(b)":["5-b-1.png"],"5(c)":["5-c-1.png"],"5(d)(i)":["5-d-i-1.png"],"5(d)(ii)":["5-d-ii-1.png"],"6(a)":["6-a-1.png"],"6(b)":["6-b-1.png"],"6(c)(i)":["6-c-i-1.png","6-c-i-2.png"],"6(c)(ii)":["6-c-ii-1.png","6-c-ii-2.png"],"6(c)(iii)":["6-c-iii-1.png"],"7(a)(i)":["7-a-i-1.png"],"7(a)(ii)":["7-a-ii-1.png"],"7(b)":["7-b-1.png"],"7(c)":["7-c-1.png","7-c-2.png","7-c-3.png"],"8(a)(i)":["8-a-i-1.png","8-a-i-2.png"],"8(a)(ii)":["8-a-ii-1.png"],"8(b)(i)":["8-b-i-1.png"],"8(b)(ii)":["8-b-ii-1.png"],"8(b)(iii)":["8-b-iii-1.png"],"8(b)(iv)":["8-b-iv-1.png"],"8(c)(i)":["8-c-i-1.png"],"8(c)(ii)":["8-c-ii-1.png"],"9(a)":["9-a-1.png","9-a-2.png"],"9(b)(i)":["9-b-i-1.png"],"9(b)(ii)":["9-b-ii-1.png","9-b-ii-2.png"],"9(b)(iii)":["9-b-iii-1.png","9-b-iii-2.png"],"9(b)(iv)":["9-b-iv-1.png","9-b-iv-2.png"],"9(b)(v)":["9-b-v-1.png"]},"ms":{"1":["1-1.png"],"2(a)(i)":["2-a-i-1.png"],"2(a)(ii)":["2-a-ii-1.png"],"2(b)":["2-b-1.png"],"3(a)":["3-a-1.png"],"3(b)(i)":["3-b-i-1.png"],"3(b)(ii)":["3-b-ii-1.png"],"4(a)(i)":["4-a-i-1.png"],"4(a)(ii)":["4-a-ii-1.png"],"4(b)":["4-b-1.png"],"5(a)":["5-a-1.png"],"5(b)":["5-b-1.png"],"5(c)":["5-c-1.png"],"5(d)(i)":["5-d-i-1.png"],"5(d)(ii)":["5-d-ii-1.png"],"6(a)":["6-a-1.png"],"6(b)":["6-b-1.png"],"6(c)(i)":["6-c-i-1.png"],"6(c)(ii)":["6-c-ii-1.png"],"6(c)(iii)":["6-c-iii-1.png"],"7(a)(i)":["7-a-i-1.png"],"7(a)(ii)":["7-a-ii-1.png"],"7(b)":["7-b-1.png"],"7(c)":["7-c-1.png","7-c-2.png"],"8(a)(i)":["8-a-i-1.png"],"8(a)(ii)":["8-a-ii-1.png"],"8(b)(i)":["8-b-i-1.png"],"8(b)(ii)":["8-b-ii-1.png"],"8(b)(iii)":["8-b-iii-1.png"],"8(b)(iv)":["8-b-iv-1.png"],"8(c)(i)":["8-c-i-1.png"],"8(c)(ii)":["8-c-ii-1.png"],"9(a)":["9-a-1.png","9-a-2.png"],"9(b)(i)":["9-b-i-1.png"],"9(b)(ii)":["9-b-ii-1.png"],"9(b)(iii)":["9-b-iii-1.png"],"9(b)(iv)":["9-b-iv-1.png"],"9(b)(v)":["9-b-v-1.png"]}};
-// Visual source-page mapping. Each question is shown from the original Pearson PDF so diagrams, graphs, tables and photographs are preserved.
-const visualMap={
- '1':{qp:[2],ms:[4]},'2(a)(i)':{qp:[3],ms:[5]},'2(a)(ii)':{qp:[3],ms:[5]},'2(b)':{qp:[4],ms:[6]},
- '3(a)':{qp:[5],ms:[7]},'3(b)(i)':{qp:[5],ms:[7]},'3(b)(ii)':{qp:[6],ms:[8]},
- '4(a)(i)':{qp:[7],ms:[9]},'4(a)(ii)':{qp:[7],ms:[9]},'4(b)':{qp:[8],ms:[10]},
- '5(a)':{qp:[9],ms:[11]},'5(b)':{qp:[9],ms:[11]},'5(c)':{qp:[10],ms:[12]},'5(d)(i)':{qp:[11],ms:[12]},'5(d)(ii)':{qp:[11,12],ms:[13]},
- '6(a)':{qp:[13],ms:[14]},'6(b)':{qp:[13],ms:[14]},'6(c)(i)':{qp:[14],ms:[15]},'6(c)(ii)':{qp:[14,15,16],ms:[15,16]},'6(c)(iii)':{qp:[16],ms:[16]},
- '7(a)(i)':{qp:[18],ms:[16]},'7(a)(ii)':{qp:[18],ms:[17]},'7(b)':{qp:[18],ms:[17]},'7(c)':{qp:[19,20,21],ms:[18,19]},
- '8(a)(i)':{qp:[22],ms:[20]},'8(a)(ii)':{qp:[23],ms:[20]},'8(b)(i)':{qp:[24],ms:[21]},'8(b)(ii)':{qp:[24],ms:[21]},'8(b)(iii)':{qp:[24,25],ms:[22]},'8(b)(iv)':{qp:[25],ms:[23]},'8(c)(i)':{qp:[26,27],ms:[24]},'8(c)(ii)':{qp:[27],ms:[25]},
- '9(a)':{qp:[28,29],ms:[26,27]},'9(b)(i)':{qp:[30],ms:[28]},'9(b)(ii)':{qp:[30],ms:[28]},'9(b)(iii)':{qp:[31],ms:[29]},'9(b)(iv)':{qp:[31],ms:[29]},'9(b)(v)':{qp:[32],ms:[30]}
-};
-const drawingQuestions=new Set(['6(a)']);
-const app=document.getElementById('app');
-const BUILD_ID='v10-fast-examiner';
-const STORAGE_VERSION='v9fresh';
-const STATE_KEY='examTutorState_'+STORAGE_VERSION;
-// v9 uses a brand-new store and performs a one-time hard reset of ALL older Exam Tutor progress.
-// The API key is preserved so the user does not need to reconnect it.
-const MIGRATION_KEY='examTutorMigration_v9';
-try{
-  if(sessionStorage.getItem(MIGRATION_KEY)!=='done'){
-    const keepKey=sessionStorage.getItem('examTutorOpenRouterKey')||'';
-    const ss=[]; for(let i=0;i<sessionStorage.length;i++){const k=sessionStorage.key(i)||'';if(k.startsWith('examTutor')&&k!=='examTutorOpenRouterKey')ss.push(k)}
-    ss.forEach(k=>sessionStorage.removeItem(k));
-    const ls=[]; for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i)||'';if(k.startsWith('examTutor'))ls.push(k)}
-    ls.forEach(k=>localStorage.removeItem(k));
-    if(keepKey)sessionStorage.setItem('examTutorOpenRouterKey',keepKey);
-    sessionStorage.setItem(MIGRATION_KEY,'done');
+  let progress = loadProgress();
+  let currentPaperCode = progress.lastPaper && papers.some(p=>p.code===progress.lastPaper) ? progress.lastPaper : papers[0]?.code;
+  let currentQuestionId = progress.lastQuestion || papers[0]?.questions[0]?.id;
+  let assetPromises = {};
+  let autosaveTimer = null;
+  let drawingDirty = false;
+  let undoStack = [];
+  let ctx = null;
+  let focusMode = false;
+
+  function loadProgress(){
+    try { return Object.assign({questions:{},lastPaper:null,lastQuestion:null,streak:0,lastStudyDate:null}, JSON.parse(localStorage.getItem(STORE_KEY)||'{}')); }
+    catch { return {questions:{},lastPaper:null,lastQuestion:null,streak:0,lastStudyDate:null}; }
   }
-}catch(e){}
-const defaultState={view:'papers',paper:null,qi:0,answers:{},results:{},confidence:{},attempts:{}};
-let state={...defaultState,answers:{},results:{},confidence:{},attempts:{}};
-try{
-  const saved=JSON.parse(sessionStorage.getItem(STATE_KEY)||'null');
-  if(saved&&typeof saved==='object') state={...defaultState,...saved,answers:saved.answers||{},results:saved.results||{},confidence:saved.confidence||{},attempts:saved.attempts||{}};
-}catch(e){ state={...defaultState,answers:{},results:{},confidence:{},attempts:{}}; }
-if(state.paper&&state.paper.id) state.paper=papers.find(p=>p.id===state.paper.id)||null;
-let drawData={};
-let redoStrokes=[]; let drawTool='pen'; let drawWidth=2.2; let pencilOnly=true;
-function persist(){try{sessionStorage.setItem(STATE_KEY,JSON.stringify({...state,paper:state.paper?{id:state.paper.id}:null}))}catch(e){}}
-function go(view){state.view=view;if(view==='papers'){state.paper=null;state.qi=0}persist();render()}
-function openPaper(id){state.paper=papers.find(p=>p.id===id)||papers[0];state.view='questions';state.qi=0;persist();render()}
-function openQ(i){state.qi=Math.max(0,Math.min(qs.length-1,Number(i)||0));state.view='viewer';persist();render()}
-function prevQ(){if(state.qi>0){state.qi--;persist();render()}}
-function nextQ(){if(state.qi<qs.length-1){state.qi++;persist();render()}}
-function setConfidence(v){let key=state.paper.id+'-'+state.qi;state.confidence[key]=v;persist();render()}
-function resetProgress(){if(!state.paper)return;let prefix=state.paper.id+'-';for(const k of Object.keys(state.answers))if(k.startsWith(prefix))delete state.answers[k];for(const k of Object.keys(state.results))if(k.startsWith(prefix))delete state.results[k];for(const k of Object.keys(state.confidence))if(k.startsWith(prefix))delete state.confidence[k];for(const k of Object.keys(state.attempts||{}))if(k.startsWith(prefix))delete state.attempts[k];drawData={};strokes=[];persist();render()}
-function resetEverything(){
-  state={...defaultState,answers:{},results:{},confidence:{},attempts:{}};drawData={};strokes=[];
-  try{sessionStorage.removeItem(STATE_KEY)}catch(e){}
-  persist();render();
-}
-function newCleanSession(){
-  try{sessionStorage.removeItem(STATE_KEY)}catch(e){}
-  state={...defaultState,answers:{},results:{},confidence:{},attempts:{}};drawData={};strokes=[];persist();render();
-}
-function aiKey(){return sessionStorage.getItem('examTutorOpenRouterKey')||''}
-function saveAiKey(){let e=document.getElementById('aiKey'),v=(e?.value||'').trim();if(!v)return alert('Paste your OpenRouter API key first.');sessionStorage.setItem('examTutorOpenRouterKey',v);render()}
-function removeAiKey(){sessionStorage.removeItem('examTutorOpenRouterKey');render()}
-function esc(v){return String(v??'').replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]))}
-function qpFile(p){return p.id==='wbi11a-2601'?'biology-u1a-jan26-qp.pdf':'biology-u1-jan26-qp.pdf'}
-function msFile(p){return p.id==='wbi11a-2601'?'biology-u1a-jan26-ms.pdf':'biology-u1-jan26-ms.pdf'}
-function sourcePages(q,p,kind='qp'){
- let files=(cropMap[kind]?.[q.n]||[]); if(!files.length)return '';
- let dir=kind==='qp'?'question-images':'markscheme-images';
- let embedded=window.EXAM_TUTOR_IMAGES?.[kind]?.[q.n]||[];
- let full=kind==='qp'?qpFile(p):msFile(p);
- return files.map((file,i)=>{let src=embedded[i]||`${dir}/${file}`;return `<figure class="question-crop"><img src="${src}" alt="${kind==='qp'?'Original Pearson question':'Official Pearson mark scheme'} for ${q.n}" loading="eager" decoding="async" onerror="this.closest('figure').innerHTML='<div class=\'image-error\'>Image failed to load. Use the full PDF link below.</div>'"></figure>`}).join('')+`<a class="open-page" href="${full}" target="_blank">View full ${kind==='qp'?'question paper':'mark scheme'} ↗</a>`;
-}
-function drawingUI(key){
- return `<div class="draw-wrap"><div class="draw-tools ipad-tools"><b>Draw your answer</b><span>Optimised for Apple Pencil</span><button class="secondary tool-btn active" id="penBtn" onclick="setDrawTool('pen')">Pen</button><button class="secondary tool-btn" id="eraserBtn" onclick="setDrawTool('eraser')">Eraser</button><button class="secondary" onclick="setDrawWidth(1.5)">Thin</button><button class="secondary" onclick="setDrawWidth(2.2)">Normal</button><button class="secondary" onclick="setDrawWidth(3.4)">Thick</button><button class="secondary" onclick="undoDraw()">Undo</button><button class="secondary" onclick="redoDraw()">Redo</button><button class="secondary" onclick="toggleDrawFullscreen()">Expand</button><button class="secondary" onclick="clearDrawing()">Clear</button></div><canvas id="drawCanvas" class="draw-canvas" aria-label="Drawing answer"></canvas><div class="draw-hint"><b>Apple Pencil ready.</b> Palm/finger touches are ignored while drawing on iPad. Use Eraser for precise corrections; Undo/Redo keeps your work safe.</div></div>`;
-}
-let buildPieces={};
-function triglycerideBuilder(key){
- const saved=drawData[key]?.builder||null;
- const pieces=saved||[
-  {id:'g',t:'glycerol',x:12,y:36},
-  {id:'f1',t:'fatty',x:70,y:18},{id:'f2',t:'fatty',x:70,y:45},{id:'f3',t:'fatty',x:70,y:72},
-  {id:'b1',t:'bond',x:45,y:23},{id:'b2',t:'bond',x:45,y:50},{id:'b3',t:'bond',x:45,y:77}
- ]; buildPieces[key]=pieces;
- return `<div class="draw-wrap"><div class="draw-tools"><b>Build your triglyceride</b><span>Drag the exact exam shapes into the arrangement you would draw.</span><button class="secondary" onclick="resetBuilder()">Reset</button></div><div id="structureBoard" class="structure-board">${pieces.map(pieceHTML).join('')}</div><div class="draw-hint"><b>Accurate diagram marking:</b> this question is marked geometrically on your arrangement, not by AI. Scribbles/random shapes cannot receive marks.</div></div>`;
-}
-function pieceHTML(p){let label=p.t==='glycerol'?'glycerol':p.t==='fatty'?'fatty acid':'ester bond';return `<div class="chem-piece ${p.t}" data-id="${p.id}" style="left:${p.x}%;top:${p.y}%" title="${label}"><span>${label}</span></div>`}
-function initBuilder(){let board=document.querySelector('#structureBoard');if(!board)return;let key=state.paper.id+'-'+state.qi;let pieces=buildPieces[key]||[];for(let el of board.querySelectorAll('.chem-piece')){el.onpointerdown=e=>{e.preventDefault();el.setPointerCapture(e.pointerId);let r=board.getBoundingClientRect(),id=el.dataset.id,p=pieces.find(x=>x.id===id);let move=ev=>{let x=(ev.clientX-r.left)/r.width*100,y=(ev.clientY-r.top)/r.height*100;p.x=Math.max(2,Math.min(94,x));p.y=Math.max(4,Math.min(92,y));el.style.left=p.x+'%';el.style.top=p.y+'%'};let up=()=>{el.removeEventListener('pointermove',move);saveBuilder()};el.addEventListener('pointermove',move);el.addEventListener('pointerup',up,{once:true})}}}
-function saveBuilder(){let key=state.paper.id+'-'+state.qi;drawData[key]={builder:buildPieces[key]||[]};}
-function resetBuilder(){let key=state.paper.id+'-'+state.qi;delete drawData[key];delete buildPieces[key];render()}
-function markTriglycerideBuilder(){let key=state.paper.id+'-'+state.qi,p=buildPieces[key]||drawData[key]?.builder||[];if(p.length!==7)return null;let g=p.find(x=>x.t==='glycerol'),fs=p.filter(x=>x.t==='fatty'),bs=p.filter(x=>x.t==='bond');if(!g||fs.length!==3||bs.length!==3)return {score:0,details:[{ok:false,text:'One glycerol, three fatty acids and three ester bonds must be shown.'}]};
- // Correct topology: glycerol left, each bond between glycerol and a fatty acid, three distinct vertical levels.
- fs.sort((a,b)=>a.y-b.y);bs.sort((a,b)=>a.y-b.y);let distinct=(fs[2].y-fs[0].y)>25&&(bs[2].y-bs[0].y)>25;let order=fs.every(f=>f.x>g.x+25)&&bs.every(b=>b.x>g.x+12&&b.x<Math.min(...fs.map(f=>f.x))+8);let aligned=fs.every((f,i)=>Math.abs(f.y-bs[i].y)<14);let criterion1=distinct;let criterion2=criterion1&&order&&aligned;let score=(criterion1?1:0)+(criterion2?1:0);return {score,details:[{ok:criterion1,text:criterion1?'One glycerol, three fatty acids and three ester bonds are represented.':'The required 1 glycerol + 3 fatty acids + 3 bonds are not arranged as three clear arms.'},{ok:criterion2,text:criterion2?'All three fatty acids are correctly connected to the glycerol through ester bonds.':'The components are not connected/aligned in the correct triglyceride arrangement.'}],feedback:score===2?'The structure satisfies both official marking points.':'Rearrange the pieces so the glycerol is on one side with three separate ester bonds leading to three fatty-acid chains.',improved:'One glycerol joined by three ester bonds to three fatty-acid chains.'};}
-let strokes=[],currentStroke=null;
-function setDrawTool(tool){drawTool=tool;document.querySelector('#penBtn')?.classList.toggle('active',tool==='pen');document.querySelector('#eraserBtn')?.classList.toggle('active',tool==='eraser');}
-function setDrawWidth(w){drawWidth=w;}
-function toggleDrawFullscreen(){let w=document.querySelector('.draw-wrap');if(!w)return;w.classList.toggle('draw-fullscreen');document.body.classList.toggle('drawing-open',w.classList.contains('draw-fullscreen'));setTimeout(()=>initDrawing(true),40);}
-function initDrawing(preserve=false){let c=document.querySelector('#drawCanvas');if(!c)return;let key=state.paper.id+'-'+state.qi;let cssW=Math.max(280,c.clientWidth),cssH=c.clientHeight||420,dpr=Math.min(window.devicePixelRatio||1,3);c.width=Math.round(cssW*dpr);c.height=Math.round(cssH*dpr);let ctx=c.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);ctx.lineCap='round';ctx.lineJoin='round';if(!preserve){strokes=drawData[key]||[];redoStrokes=[]}redraw();let activeId=null;
- const point=e=>{let r=c.getBoundingClientRect();return {x:(e.clientX-r.left)/r.width,y:(e.clientY-r.top)/r.height,p:e.pressure||0.5}};
- const accept=e=>{if(e.pointerType==='touch'&&pencilOnly)return false;return e.isPrimary!==false};
- const start=e=>{if(!accept(e))return;e.preventDefault();activeId=e.pointerId;c.setPointerCapture?.(e.pointerId);redoStrokes=[];currentStroke={tool:drawTool,width:drawWidth,points:[point(e)]};strokes.push(currentStroke);drawData[key]=strokes;redraw()};
- const move=e=>{if(activeId!==e.pointerId||!currentStroke)return;e.preventDefault();let events=e.getCoalescedEvents?e.getCoalescedEvents():[e];for(const ev of events)currentStroke.points.push(point(ev));redraw()};
- const end=e=>{if(activeId!==e.pointerId)return;e.preventDefault();try{c.releasePointerCapture?.(e.pointerId)}catch{}activeId=null;currentStroke=null;saveDrawing()};
- c.onpointerdown=start;c.onpointermove=move;c.onpointerup=end;c.onpointercancel=end;c.oncontextmenu=e=>e.preventDefault();
-}
-function redraw(){let c=document.querySelector('#drawCanvas');if(!c)return;let ctx=c.getContext('2d'),dpr=Math.min(window.devicePixelRatio||1,3),w=c.width/dpr,h=c.height/dpr;ctx.save();ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);for(let raw of strokes){let st=Array.isArray(raw)?{tool:'pen',width:3,points:raw.map(p=>({x:p[0]/w,y:p[1]/h,p:.5}))}:raw;if(!st?.points?.length)continue;ctx.save();ctx.globalCompositeOperation=st.tool==='eraser'?'destination-out':'source-over';ctx.strokeStyle='#111827';ctx.lineWidth=st.tool==='eraser'?Math.max(14,st.width*6):st.width;ctx.lineCap='round';ctx.lineJoin='round';let pts=st.points.map(p=>({x:p.x*w,y:p.y*h}));ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);if(pts.length===1){ctx.lineTo(pts[0].x+.01,pts[0].y+.01)}else{for(let i=1;i<pts.length-1;i++){let mx=(pts[i].x+pts[i+1].x)/2,my=(pts[i].y+pts[i+1].y)/2;ctx.quadraticCurveTo(pts[i].x,pts[i].y,mx,my)}let z=pts[pts.length-1];ctx.lineTo(z.x,z.y)}ctx.stroke();ctx.restore()}ctx.restore();}
-function saveDrawing(){let key=state.paper.id+'-'+state.qi;drawData[key]=strokes;persist();}
-function undoDraw(){if(!strokes.length)return;redoStrokes.push(strokes.pop());saveDrawing();redraw()}
-function redoDraw(){if(!redoStrokes.length)return;strokes.push(redoStrokes.pop());saveDrawing();redraw()}
-function clearDrawing(){if(strokes.length)redoStrokes.push(...strokes.splice(0));saveDrawing();redraw()}
-function drawingStats(){let pts=0,len=0,minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity,c=document.querySelector('#drawCanvas'),w=c?.clientWidth||1,h=c?.clientHeight||420;for(const raw of strokes){let a=Array.isArray(raw)?raw.map(p=>({x:p[0]/w,y:p[1]/h})):raw.points||[];pts+=a.length;for(let i=0;i<a.length;i++){let x=a[i].x*w,y=a[i].y*h;minX=Math.min(minX,x);minY=Math.min(minY,y);maxX=Math.max(maxX,x);maxY=Math.max(maxY,y);if(i){let px=a[i-1].x*w,py=a[i-1].y*h;len+=Math.hypot(x-px,y-py)}}}return {strokes:strokes.length,pts,len,bbox:(isFinite(minX)?[minX,minY,maxX,maxY]:null)};}
-function validDrawingAttempt(){let d=drawingStats();return d.strokes>=2 && d.pts>=8 && d.len>=45;}
-function canvasDataUrl(){let c=document.querySelector('#drawCanvas');return c?c.toDataURL('image/png'):null}
-function setupAI(){let existing=aiKey();return `<div class="ai-setup"><b>AI examiner setup</b><p class="ai-note">Connect an OpenRouter key for written-answer examiner marking. Drawing questions never use AI. The key is kept only in this browser tab/session in this prototype and is not included in the downloaded project.</p><input id="aiKey" type="password" autocomplete="off" placeholder="OpenRouter API key" value="${esc(existing)}"><button class="secondary" onclick="saveAiKey()">${existing?'Update key':'Connect AI'}</button>${existing?` <button class="danger-link" onclick="removeAiKey()">Disconnect</button>`:''}</div>`}
-function schemeText(q){if(q.type==='mcq')return `Correct option: ${q.correct}.`;if(q.groups)return q.groups.map((g,i)=>`Accepted route ${i+1}: ${g.map(x=>x[0]).join(' | ')}`).join('\n');if(q.alts)return `Accept one of: ${q.alts.join('; ')}`;return (q.scheme||[]).map((x,i)=>`${i+1}. ${x[0]}`).join('\n')+(q.cap?`\nMaximum ${q.cap} marks.`:'')+(q.note?`\nExaminer guidance: ${q.note}`:'')}
-function extractTextContent(content){
- if(typeof content==='string')return content;
- if(Array.isArray(content))return content.map(x=>typeof x==='string'?x:(x?.text||x?.content||'')).join('\n');
- if(content&&typeof content==='object')return content.text||content.content||'';
- return '';
-}
-function lineValue(text,label){
- const m=String(text||'').match(new RegExp('(?:^|\\n)\\s*'+label+'\\s*:\\s*(.*)','i'));
- return m?m[1].trim():'';
-}
-function parseYes(v){return /^(yes|true|met|1)\b/i.test(String(v||'').trim())}
-function parseDrawingReply(raw){
- const t=extractTextContent(raw).trim(); if(!t)return null;
- // Preferred: JSON object returned by OpenRouter structured-output routing.
- try{
-   const cleaned=t.replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'').trim();
-   const j=JSON.parse(cleaned);
-   const score=Number(j.score);
-   if(Number.isFinite(score)&&score>=0&&score<=2){
-     const m1=!!j.m1, m2=m1&&!!j.m2;
-     return {score:(m1?1:0)+(m2?1:0),criteria:[{criterion:'M1',met:m1,visible_evidence:String(j.m1_evidence||'')},{criterion:'M2',met:m2,visible_evidence:String(j.m2_evidence||'')}],feedback:String(j.feedback||''),improved_answer:String(j.improved||'')};
-   }
- }catch(_){}
- // Fallback for a provider that ignores response_format but still follows the prompt.
- const m1=lineValue(t,'M1'),m2=lineValue(t,'M2');
- if(m1||m2){const ok1=parseYes(m1),ok2=ok1&&parseYes(m2);return {score:(ok1?1:0)+(ok2?1:0),criteria:[{criterion:'M1',met:ok1,visible_evidence:lineValue(t,'M1_EVIDENCE')||m1},{criterion:'M2',met:ok2,visible_evidence:lineValue(t,'M2_EVIDENCE')||m2}],feedback:lineValue(t,'FEEDBACK'),improved_answer:lineValue(t,'IMPROVED')}};
- return null;
-}
-function parseWrittenReply(raw,max){
- const t=extractTextContent(raw).trim(); if(!t)return null;
- const sv=lineValue(t,'SCORE'); const n=Number((sv.match(/\d+(?:\.\d+)?/)||[])[0]); if(!Number.isFinite(n))return null;
- const split=v=>String(v||'').split(/\s*\|\s*/).map(x=>x.trim()).filter(Boolean);
- return {score:Math.max(0,Math.min(max,n)),awarded:split(lineValue(t,'AWARDED')),missed:split(lineValue(t,'MISSED')),feedback:lineValue(t,'FEEDBACK'),improved_answer:lineValue(t,'IMPROVED')};
-}
-async function aiMark(){
- const p=state.paper,q=qs[state.qi],key=p.id+'-'+state.qi,a=getAnswer(q,key);
- if(drawingQuestions.has(q.n))return showDrawingScheme();
- if(!a)return alert('Write or select an answer first.');
- // Deterministic questions stay instant and do not waste an AI request.
- if(q.type==='mcq'||q.alts||q.keys){mark();return;}
- if(q.n==='6(c)(i)'){
-   const n=Number(String(a).replace(/[^0-9.\-]/g,'')); const ok=Number.isInteger(n)&&n>=15&&n<=50;
-   state.answers[key]=a;state.results[key]={score:ok?1:0,details:[{ok,text:ok?'Accepted: whole-number estimate is within the Pearson 15–50 °C range.':'Pearson accepts a whole-number estimate from 15 °C to 50 °C.'}],answer:a,ai:false,feedback:ok?'Your value is within the accepted range.':'Re-read the graph scale and give a whole-number estimate in the accepted range.',improved:ok?a:'A whole-number estimate between 15 °C and 50 °C.',attemptedAt:Date.now()};persist();render();return;
- }
- const token=aiKey(); if(!token)return alert('Connect your OpenRouter key in AI examiner setup first.');
- state.answers[key]=a; state.attempts[key]=(state.attempts[key]||0)+1; persist();
- const btn=document.querySelector('#aiMarkBtn'); if(btn){btn.disabled=true;btn.textContent='Marking…'}
- const endpoint=(window.EXAM_TUTOR_AI||{}).endpoint||'https://openrouter.ai/api/v1/chat/completions';
- const levelRule=q.level?`\nLEVEL QUESTION: Judge holistically using Pearson's levels. 1–2 = limited/simple; 3–4 = some linked explanation/analysis across relevant aspects; 5–6 = detailed sustained logically-linked reasoning across most/all relevant aspects. Do not convert this into simple keyword counting.`:'';
- const prompt=`Act as a strict Pearson Edexcel International A Level Biology examiner. Use ONLY the supplied question-specific Pearson guidance. Mark positively, but never infer an idea the student did not actually express. Every awarded mark must map to a Pearson point. Equivalent wording is creditworthy only when it communicates the same scientific meaning. Enforce caps, dependencies, ACCEPT/IGNORE/DO NOT ACCEPT instructions, units, rounding and ECF where supplied. Contradictory, incomplete or vague statements do not earn the relevant mark.${levelRule}\n\nQUESTION ${q.n} [${q.marks}]: ${q.q}\nPEARSON GUIDANCE: ${schemeText(q)}\nSTUDENT: ${a}\n\nReturn ONLY these six labelled lines. Keep each line concise so marking is fast.\nSCORE: integer 0-${q.marks}\nAWARDED: mark-by-mark; quote a short phrase from the student's answer -> matched Pearson point; separate with |\nMISSED: only the Pearson points needed to reach full marks; separate with |\nWHY: precise reason any plausible/vague wording failed; None if nothing failed\nNEXT: one highest-value change for the next attempt\nIMPROVED: concise full-mark answer using only the Pearson guidance`;
- // Ling Flash is currently much faster/more available than the old Ultra endpoint.
- // For 6-mark level responses we retain Ultra as a quality fallback, never as a second-pass if the first result is valid.
- const candidates=q.level
-   ? ['inclusionai/ling-3.0-flash-fin:free','nvidia/nemotron-3-ultra-550b-a55b:free','openrouter/free']
-   : ['inclusionai/ling-3.0-flash-fin:free','nvidia/nemotron-3.5-lightning:free','openrouter/free'];
- function parse(raw){
-   const t=extractTextContent(raw).trim(); if(!t)return null;
-   const sv=lineValue(t,'SCORE'); const n=Number((sv.match(/\d+(?:\.\d+)?/)||[])[0]); if(!Number.isFinite(n))return null;
-   const split=v=>String(v||'').split(/\s*\|\s*/).map(x=>x.trim()).filter(Boolean).filter(x=>!/^(none|n\/a)$/i.test(x));
-   const awarded=split(lineValue(t,'AWARDED')),missed=split(lineValue(t,'MISSED'));
-   const score=Math.max(0,Math.min(q.marks,Math.round(n)));
-   // Sanity checks stop internally inconsistent AI marks being saved.
-   if(score>0 && awarded.length===0)return null;
-   if(score<q.marks && missed.length===0)return null;
-   return {score,awarded,missed,why:lineValue(t,'WHY'),next:lineValue(t,'NEXT'),feedback:lineValue(t,'WHY')||lineValue(t,'NEXT'),improved_answer:lineValue(t,'IMPROVED')};
- }
- async function attempt(model,timeoutMs){
-   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),timeoutMs);
-   try{
-     const body={model,temperature:0,max_tokens:q.level?620:460,provider:{sort:'latency',allow_fallbacks:true},messages:[{role:'user',content:prompt}]};
-     const res=await fetch(endpoint,{method:'POST',signal:controller.signal,headers:{Authorization:'Bearer '+token,'Content-Type':'application/json','HTTP-Referer':location.origin,'X-Title':'Private Exam Tutor'},body:JSON.stringify(body)});
-     const rawBody=await res.text(); if(!res.ok){let msg=`OpenRouter ${res.status}`;try{msg=JSON.parse(rawBody)?.error?.message||msg}catch(_){}throw new Error(msg)}
-     let data;try{data=JSON.parse(rawBody)}catch(_){throw new Error('Unreadable API response')}
-     const parsed=parse(data?.choices?.[0]?.message?.content); if(!parsed)throw new Error('Examiner returned an incomplete response'); return parsed;
-   }finally{clearTimeout(timer)}
- }
- try{
-   let j=null,lastErr=null;
-   for(let i=0;i<candidates.length;i++){
-     try{if(btn)btn.textContent=i===0?'Marking…':`Fast fallback ${i}/${candidates.length-1}…`;j=await attempt(candidates[i],i===0?15000:18000);break}catch(e){lastErr=e}
-   }
-   if(!j)throw lastErr||new Error('No examiner available');
-   const details=[...j.awarded.map(x=>({ok:true,text:x})),...j.missed.map(x=>({ok:false,text:x}))];
-   state.results[key]={score:j.score,details,answer:a,ai:true,feedback:j.feedback||'',why:j.why||'',next:j.next||'',improved:String(j.improved_answer||''),attempt:state.attempts[key],attemptedAt:Date.now()};persist();render();
- }catch(e){if(btn){btn.disabled=false;btn.textContent='✦ Mark written answer'};const msg=e?.name==='AbortError'?'The free examiner timed out.':(e?.message||'The free examiner was unavailable.');alert('Written marking could not complete. No mark was saved.\n\n'+msg+'\n\nYour answer is still on the page, so you can retry.');}
-}
-function showDrawingScheme(){
- const p=state.paper,q=qs[state.qi],key=p.id+'-'+state.qi; saveDrawing();
- if(!(drawData[key]||[]).length)return alert('Draw your answer first.');
- const box=document.getElementById('drawingSelfMark'); if(box){box.hidden=false;box.scrollIntoView({behavior:'smooth',block:'nearest'});}
-}
-function selfMarkDrawing(score){
- const p=state.paper,q=qs[state.qi],key=p.id+'-'+state.qi; score=Math.max(0,Math.min(q.marks,Number(score)||0));
- state.results[key]={score,details:q.scheme.map((x,i)=>({ok:i<score,text:x[0]})),answer:'[DRAWING SELF-MARKED]',selfMarked:true,attemptedAt:Date.now()};persist();render();
-}
+  function saveProgress(){ try{localStorage.setItem(STORE_KEY,JSON.stringify(progress));}catch(e){console.warn('Progress save failed',e);} }
+  function qstate(id){ return progress.questions[id] || (progress.questions[id]={draft:'',starred:false,attempts:[],drawing:null}); }
+  function paperByCode(c){ return papers.find(p=>p.code===c); }
+  function questionById(id){ for(const p of papers){const q=p.questions.find(x=>x.id===id);if(q)return {paper:p,q};} return null; }
+  function current(){ return questionById(currentQuestionId) || {paper:papers[0],q:papers[0]?.questions[0]}; }
+  function esc(s){ return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+  function toast(msg){ els.toast.textContent=msg;els.toast.classList.add('show');setTimeout(()=>els.toast.classList.remove('show'),1800); }
 
-function render(){ if(state.view==='papers') papersView(); else if(state.view==='questions') questionList(); else viewer(); }
-function papersView(){app.innerHTML=`<div class="hero"><div><span class="eyebrow">YOUR STUDY STACKS · v11 PSYCH + BIO</span><h1>What do you want to practise?</h1><p>Exam questions with strict Pearson-based written marking, calculation checks and deep feedback.</p></div><div class="stat"><b>2</b><span>active stacks</span></div></div><div class="sectionTitle"><div><h2>Psychology · Unit 1</h2><p>Social and Cognitive Psychology · 6 paper stacks</p></div></div><div class="paperGrid"><article class="paperCard" onclick="location.href='psychology.html'"><div class="paperTop"><span class="subjectBadge">PSYCHOLOGY</span><span class="ready">● Ready</span></div><h3>2023–2026 Psychology bank</h3><p>WPS01/01 · Pearson levels-based AI examiner</p><div class="paperMeta"><span>6 papers</span><span>8 & 12 markers tuned</span></div><button class="primary">Open Psychology →</button></article></div><div class="sectionTitle"><div><h2>Biology · Unit 1</h2><p>Molecules, Diet, Transport and Health</p></div></div><div class="paperGrid">${papers.map(p=>`<article class="paperCard" onclick="openPaper('${p.id}')"><div class="paperTop"><span class="subjectBadge">BIOLOGY</span><span class="ready">● Ready</span></div><h3>${p.title}</h3><p>${p.code}</p>${p.id==='wbi11a-2601'?'<p class="paper-note">01A uses the same assessment questions as 01; Pearson supplies a separate Answer Book.</p>':''}<div class="paperMeta"><span>${p.time}</span><span>${p.marks} marks</span></div><button class="primary">Open stack →</button></article>`).join('')}</div><div class="notice"><b>Marking source:</b> the supplied Pearson mark schemes. All questions from the January 2026 Unit 1 paper are now included. The original PDFs remain available inside each paper.</div>`}
-function questionList(){let p=state.paper;app.innerHTML=`<button class="back" onclick="go('papers')">← Papers</button><div class="paperHeader"><div><span class="subjectBadge">BIOLOGY</span><h1>${p.title}</h1><p>${p.code} · ${p.time} · ${p.marks} marks</p></div><div class="pdfBtns"><a href="${p.qp}" target="_blank">Question paper ↗</a><a href="${p.ms}" target="_blank">Mark scheme ↗</a></div></div><div class="paper-tools"><span>${Object.keys(state.results).filter(k=>k.startsWith(p.id)).length} / ${qs.length} parts attempted</span><button class="secondary" onclick="resetProgress()">Reset paper progress</button> <button class="secondary" onclick="newCleanSession()">New clean session</button></div><div class="questionList">${qs.map((q,i)=>{let r=state.results[p.id+'-'+i],c=state.confidence[p.id+'-'+i];return `<div class="qrow" onclick="openQ(${i})"><div class="qnum">${q.n}</div><div class="grow"><b>${q.q}</b><span>${q.marks} mark${q.marks>1?'s':''}${c?' · confidence: '+c:''}</span></div>${r?`<div class="miniScore">${r.score}/${q.marks}</div>`:'<div class="unattempted">Not attempted</div>'}<div class="chev">›</div></div>`}).join('')}</div>`}
-function answerUI(q,key){if(drawingQuestions.has(q.n))return drawingUI(key);if(q.type==='mcq')return `<div class="choices">${q.options.map(o=>`<label><input type="radio" name="mcq" value="${o[0]}" ${state.answers[key]===o[0]?'checked':''}> <span>${o}</span></label>`).join('')}</div>`;return `<textarea id="ans" class="answer" placeholder="Write your exam answer here...">${esc(state.answers[key]||'')}</textarea>`}
-function viewer(){let p=state.paper,q=qs[state.qi],key=p.id+'-'+state.qi,r=state.results[key];app.innerHTML=`<div class="viewer-nav"><button class="back" onclick="state.view='questions';persist();render()">← Questions</button><div><button class="secondary" onclick="prevQ()" ${state.qi===0?'disabled':''}>← Previous</button> <button class="secondary" onclick="nextQ()" ${state.qi===qs.length-1?'disabled':''}>Next →</button></div></div><div class="viewer"><section class="exam"><div class="examBar"><span>${p.code}</span><b>${q.marks} MARK${q.marks>1?'S':''}</b></div><div class="qn">Question ${q.n}</div><div class="source-title"><b>Actual exam question</b><span>Shown directly from your Pearson paper so every diagram, graph, table and photo stays intact.</span></div><div class="source-pages">${sourcePages(q,p,'qp')}</div>${answerUI(q,key)}<div class="confidence"><span>How confident are you?</span>${['Low','Medium','High'].map(v=>`<button data-v="${v}" class="${state.confidence[key]===v?'active':''}" onclick="setConfidence('${v}')">${v}</button>`).join('')}</div><div class="actions">${drawingQuestions.has(q.n)?'<button class="primary" onclick="showDrawingScheme()">Show mark scheme & self-mark</button>':'<button class="primary" id="aiMarkBtn" onclick="aiMark()">✦ Mark written answer</button><button class="secondary" onclick="mark()">Quick local check</button>'}<button class="secondary" onclick="clearAns()">Clear</button></div>${drawingQuestions.has(q.n)?`<div id="drawingSelfMark" class="result" hidden><h3>Self-mark this drawing</h3><p>Compare your drawing with the official Pearson mark scheme below. AI is deliberately disabled for drawing questions.</p><div class="official-ms">${sourcePages(q,p,'ms')}</div><p><b>Official points:</b><br>1 mark — one glycerol, three fatty acids and three bonds shown.<br>1 mark — all components joined together correctly.</p><div class="actions"><button class="secondary" onclick="selfMarkDrawing(0)">0 / 2</button><button class="secondary" onclick="selfMarkDrawing(1)">1 / 2</button><button class="primary" onclick="selfMarkDrawing(2)">2 / 2</button></div></div>`:''}${r?resultHTML(r,q,p):''}</section><aside class="sidebar"><div class="sideCard"><span class="tiny">PAPER</span><b>${p.title}</b><p>${p.code}</p>${p.id==='wbi11a-2601'?'<p class="paper-note">01A uses the same assessment questions as 01; Pearson supplies a separate Answer Book.</p>':''}</div><div class="sideCard"><span class="tiny">PROGRESS</span><b>${Object.keys(state.results).filter(k=>k.startsWith(p.id)).length} / ${qs.length} parts attempted</b></div><div class="sideCard"><span class="tiny">QUESTION</span><b>${state.qi+1} of ${qs.length}</b><p>v10 keeps your current v9 progress. Written marking uses a faster strict Pearson examiner; drawings stay self-marked.</p></div><div class="ai-status"><span class="ai-dot ${aiKey()?'':'off'}"></span>${aiKey()?'AI examiner connected':'AI examiner not connected'}</div>${setupAI()}<a class="sideLink" href="${p.qp}" target="_blank">Open original question paper ↗</a></aside></div>`;setTimeout(()=>{if(drawingQuestions.has(q.n))initDrawing()},0)}
-function getAnswer(q,key){if(drawingQuestions.has(q.n)){saveDrawing();let hasInk=(drawData[key]||[]).length>0;return hasInk?'[DRAWING SUBMITTED]':''}if(q.type==='mcq'){let e=document.querySelector('input[name=mcq]:checked');return e?e.value:''}return document.querySelector('#ans')?.value.trim()||''}
-function has(a,keys){a=a.toLowerCase().replace(/[–—]/g,'-');return keys.some(k=>a.includes(k))}
-function mark(){let p=state.paper,q=qs[state.qi],key=p.id+'-'+state.qi,a=getAnswer(q,key);if(!a)return alert('Write or select an answer first.');if(drawingQuestions.has(q.n))return showDrawingScheme();state.answers[key]=a;let score=0,details=[];
- if(q.type==='mcq'){score=a===q.correct?1:0;details=[{ok:score===1,text:score?'Correct answer.':`The credited answer is ${q.correct}.`}];}
- else if(q.groups){let best=[];for(const g of q.groups){let d=g.map(x=>({ok:has(a,x[1]),text:x[0]}));if(d.filter(x=>x.ok).length>best.filter(x=>x.ok).length)best=d}score=best.filter(x=>x.ok).length;details=best;}
- else if(q.alts){let ok=has(a,q.keys);score=ok?1:0;details=[{ok,text:ok?'Creditable answer.':`Credit requires one of: ${q.alts.join('; ')}.`}];}
- else {details=q.scheme.map(x=>({ok:has(a,x[1]),text:x[0]}));score=details.filter(x=>x.ok).length;if(q.cap)score=Math.min(score,q.cap);score=Math.min(score,q.marks)}
- state.results[key]={score,details,answer:a,attemptedAt:Date.now()};persist();render();}
-function resultHTML(r,q,p){let full=r.score===q.marks;return `<div class="result"><div class="resultHead"><div><span class="tiny">MARK</span><div class="bigScore">${r.score}<small>/${q.marks}</small></div></div><div class="verdict ${full?'full':''}">${full?'Full marks':'Improve and retry'}</div></div><h3>${r.selfMarked?'Self-mark record':'Pearson mark-scheme breakdown'}</h3>${r.details.map(d=>`<div class="point ${d.ok?'hit':'miss'}"><span>${d.ok?'✓':'×'}</span><div>${esc(d.text)}</div></div>`).join('')}${r.ai?`<div class="ai-feedback"><div class="ai-title">✦ Strict examiner feedback · Attempt ${r.attempt||1}</div><div class="ai-body">${r.why?`<h4>Why marks were lost</h4><p>${esc(r.why)}</p>`:''}${r.next?`<h4>Highest-priority improvement</h4><p>${esc(r.next)}</p>`:''}<h4>Full-mark version</h4><p>${esc(r.improved)}</p><p class="ai-note">The AI is constrained to the supplied Pearson guidance; the original mark scheme below remains the final reference.</p></div></div>`:''}${q.note?`<div class="guidance"><b>Examiner guidance</b><br>${q.note}</div>`:''}<div class="official-ms"><h3>Actual Pearson mark scheme</h3><p>Original mark-scheme extract for this question.</p>${sourcePages(q,p,'ms')}</div><div class="post-actions"><button class="retry" onclick="document.querySelector('#ans')?.focus()">Edit answer & retry</button><button class="primary" onclick="nextQ()" ${state.qi===qs.length-1?'disabled':''}>Next question →</button></div></div>`}
-function clearAns(){let p=state.paper,key=p.id+'-'+state.qi;delete state.answers[key];delete state.results[key];delete state.confidence[key];delete drawData[key];strokes=[];persist();render()}
-render();
+  function filteredQuestions(){
+    const f=els.questionFilter.value, mf=els.markFilter.value;
+    const out=[];
+    for(const p of papers){
+      for(const q of p.questions){
+        const s=qstate(q.id); const last=s.attempts?.at(-1);
+        if(mf!=='all' && String(q.marks)!==mf) continue;
+        if(f==='unanswered' && s.attempts?.length) continue;
+        if(f==='wrong' && (!last || last.score>=q.marks)) continue;
+        if(f==='extended' && ![8,12].includes(q.marks)) continue;
+        if(f==='short' && q.marks>4) continue;
+        if(f==='starred' && !s.starred) continue;
+        out.push({paper:p,q});
+      }
+    }
+    return out;
+  }
+
+  function renderPaperList(){
+    els.paperList.innerHTML='';
+    for(const p of papers){
+      const done=p.questions.filter(q=>qstate(q.id).attempts?.length).length;
+      const b=document.createElement('button');b.className='paper'+(p.code===currentPaperCode?' active':'');
+      b.innerHTML=`<div class="paper-title">${esc(p.session)}</div><div class="paper-sub"><span>${p.questionCount} question parts</span><span>${done}/${p.questionCount}</span></div><div class="progress-bar"><i style="width:${Math.round(done/p.questionCount*100)}%"></i></div>`;
+      b.addEventListener('click',()=>{currentPaperCode=p.code;const q=filteredQuestions().find(x=>x.paper.code===p.code)?.q || p.questions[0];go(q.id);els.sidebar.classList.remove('open');});
+      els.paperList.appendChild(b);
+    }
+  }
+
+  async function loadAssets(code){
+    if(window.PSY_ASSETS?.[code]) return window.PSY_ASSETS[code];
+    if(assetPromises[code]) return assetPromises[code];
+    assetPromises[code]=new Promise((resolve,reject)=>{
+      const s=document.createElement('script');s.src=`assets-${code}.js?v=1`;s.async=true;
+      s.onload=()=>window.PSY_ASSETS?.[code]?resolve(window.PSY_ASSETS[code]):reject(new Error('Asset bundle loaded without data'));
+      s.onerror=()=>reject(new Error('Could not load source images'));
+      document.head.appendChild(s);
+    });
+    return assetPromises[code];
+  }
+
+  function sourceImage(src, alt){ const img=document.createElement('img');img.className='source-img';img.src=src;img.alt=alt;img.loading='eager';return img; }
+  async function renderQuestion(){
+    const {paper,q}=current(); if(!q)return;
+    currentPaperCode=paper.code; progress.lastPaper=paper.code;progress.lastQuestion=q.id;saveProgress();
+    renderPaperList();
+    els.paperEyebrow.textContent=`Psychology Unit 1 • ${paper.session}`;
+    els.questionTitle.textContent=`Question ${q.label}`;
+    els.questionMeta.innerHTML='';
+    const tags=[`${q.marks} mark${q.marks===1?'':'s'}`];
+    if(q.extended)tags.push('Extended response'); if(q.calculation)tags.push('Calculation'); if(q.drawing)tags.push('Drawing');
+    for(const t of tags){const s=document.createElement('span');s.className='pill'+(q.extended?' purple':'');s.textContent=t;els.questionMeta.appendChild(s);}
+    const st=qstate(q.id);els.answerBox.value=st.draft||'';updateWordCount();
+    els.starBtn.textContent=st.starred?'★':'☆';els.starBtn.classList.toggle('soft',!!st.starred);
+    els.drawWrap.classList.toggle('show',!!q.drawing || !!st.drawing);
+    els.schemePanel.classList.remove('show');els.schemeBtn.textContent='Show Pearson scheme';
+    els.sourceArea.innerHTML='<div class="loading-assets">Loading exact Pearson source...</div>';els.assetStatus.textContent='';
+    els.openMsPdf.href=paper.msFile;
+    renderAttempts();
+    const last=st.attempts?.at(-1); if(last)renderResult(last,q); else clearResult(q);
+    await nextFrame(); setupCanvas(st.drawing);
+    try{
+      const assets=await loadAssets(paper.code); els.sourceArea.innerHTML='';
+      if(q.contextImages?.length){const lab=document.createElement('div');lab.className='source-label';lab.textContent='Shared question context';els.sourceArea.appendChild(lab);for(const k of q.contextImages){const w=document.createElement('div');w.className='source-wrap';w.appendChild(sourceImage(assets[k],`Context for question ${q.label}`));els.sourceArea.appendChild(w);}}
+      const lab=document.createElement('div');lab.className='source-label';lab.textContent='Question';els.sourceArea.appendChild(lab);
+      for(const k of q.questionImages){const w=document.createElement('div');w.className='source-wrap';w.appendChild(sourceImage(assets[k],`Question ${q.label}`));els.sourceArea.appendChild(w);}
+      els.assetStatus.textContent='Exact source crop';
+      if(q.drawing)els.drawWrap.classList.add('show');
+    }catch(e){els.sourceArea.innerHTML=`<div class="loading-assets">${esc(e.message)}. <a href="${esc(paper.qpFile)}" target="_blank">Open the source PDF ↗</a></div>`;}
+    updateNav();updateStats();
+  }
+
+  function clearResult(q){ els.scoreBig.textContent=`-/${q.marks}`;els.latency.textContent='';els.aoRow.innerHTML='';els.feedback.innerHTML='<div class="tiny">Submit an answer to get strict Pearson-based feedback.</div>'; }
+  function feedbackBox(title,text,kind=''){ if(!text)return null; const d=document.createElement('div');d.className='fb '+kind;const b=document.createElement('b');b.textContent=title;const p=document.createElement('p');p.textContent=text;d.append(b,p);return d; }
+  function renderResult(a,q){
+    els.scoreBig.textContent=`${a.score}/${q.marks}`;els.latency.textContent=a.latencyMs?`${(a.latencyMs/1000).toFixed(1)}s • ${a.model||'AI'}`:(a.model||'AI');els.aoRow.innerHTML='';
+    if(a.ao){for(const [k,v] of Object.entries(a.ao)){const s=document.createElement('span');s.className='ao';s.textContent=`${k}: ${v}`;els.aoRow.appendChild(s);}}
+    if(a.level){const s=document.createElement('span');s.className='ao';s.textContent=`Level ${a.level}`;els.aoRow.appendChild(s);}
+    els.feedback.innerHTML='';
+    const boxes=[feedbackBox('What earned credit',a.credit,'good'),feedbackBox('What is missing',a.missing,a.score===q.marks?'good':'warn'),feedbackBox('Highest-value improvement',a.upgrade,'warn'),feedbackBox(q.extended?'Full-mark blueprint':'Improved full-mark answer',a.modelAnswer,'')];
+    boxes.filter(Boolean).forEach(x=>els.feedback.appendChild(x));
+    if(!boxes.some(Boolean)){const r=feedbackBox('Examiner feedback',a.raw||'Marked successfully.','');if(r)els.feedback.appendChild(r);}
+  }
+  function renderAttempts(){
+    const {q}=current(), s=qstate(q.id);els.attemptCount.textContent=String(s.attempts?.length||0);els.attempts.innerHTML='';
+    [...(s.attempts||[])].reverse().slice(0,6).forEach(a=>{const d=document.createElement('div');d.className='attempt';d.innerHTML=`<div class="attempt-top"><span>${a.score}/${q.marks}</span><span>${new Date(a.time).toLocaleDateString()}</span></div><div class="attempt-answer"></div>`;d.querySelector('.attempt-answer').textContent=a.answer||'[drawing answer]';d.addEventListener('click',()=>renderResult(a,q));els.attempts.appendChild(d);});
+    if(!s.attempts?.length)els.attempts.innerHTML='<div class="tiny" style="margin-top:8px">No attempts yet.</div>';
+  }
+
+  async function showScheme(force){
+    const {paper,q}=current();const should=force===true || !els.schemePanel.classList.contains('show');
+    if(!should){els.schemePanel.classList.remove('show');els.schemeBtn.textContent='Show Pearson scheme';return;}
+    els.schemePanel.classList.add('show');els.schemeBtn.textContent='Hide Pearson scheme';els.schemeImages.innerHTML='<div class="tiny" style="margin-top:8px">Loading exact scheme...</div>';
+    try{const assets=await loadAssets(paper.code);els.schemeImages.innerHTML='';for(const k of q.schemeImages){const w=document.createElement('div');w.className='source-wrap';w.appendChild(sourceImage(assets[k],`Mark scheme ${q.label}`));els.schemeImages.appendChild(w);}}
+    catch(e){els.schemeImages.textContent=e.message;}
+  }
+
+  function go(id){
+    const hit=questionById(id); if(!hit)return; currentQuestionId=id;currentPaperCode=hit.paper.code;renderQuestion();window.scrollTo({top:0,behavior:'smooth'});
+  }
+  function updateNav(){const list=filteredQuestions();let i=list.findIndex(x=>x.q.id===currentQuestionId);els.prevBtn.disabled=i<=0;els.nextBtn.disabled=i<0||i>=list.length-1;}
+  function adjacent(delta){const list=filteredQuestions();let i=list.findIndex(x=>x.q.id===currentQuestionId);if(i<0)i=0;const x=list[i+delta];if(x)go(x.q.id);}
+  function randomQuestion(){const list=filteredQuestions().filter(x=>x.q.id!==currentQuestionId);if(!list.length)return toast('No other question matches this filter.');go(list[Math.floor(Math.random()*list.length)].q.id);}
+
+  function updateWordCount(){const n=(els.answerBox.value.trim().match(/\S+/g)||[]).length;els.wordCount.textContent=`${n} word${n===1?'':'s'}`;}
+  function saveDraft(){const {q}=current();if(!q)return;const s=qstate(q.id);s.draft=els.answerBox.value;if(drawingDirty){try{s.drawing=canvasData();}catch{}}saveProgress();}
+
+  // Drawing canvas - high DPI, Apple Pencil/mouse. Touch is ignored to avoid palm/finger marks.
+  function setupCanvas(saved){
+    const c=els.drawCanvas; if(!c)return;const rect=c.getBoundingClientRect();const dpr=Math.min(window.devicePixelRatio||1,2.5);const old=saved;
+    c.width=Math.max(1,Math.round(rect.width*dpr));c.height=Math.max(1,Math.round(rect.height*dpr));ctx=c.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle='#111827';ctx.lineWidth=2.2;ctx.fillStyle='#fff';ctx.fillRect(0,0,rect.width,rect.height);undoStack=[];drawingDirty=false;
+    if(old){const im=new Image();im.onload=()=>{ctx.drawImage(im,0,0,rect.width,rect.height);};im.src=old;}
+  }
+  function canvasData(){return els.drawCanvas.toDataURL('image/png');}
+  function snapshot(){try{undoStack.push(canvasData());if(undoStack.length>12)undoStack.shift();}catch{}}
+  let drawing=false;
+  function pointerXY(e){const r=els.drawCanvas.getBoundingClientRect();return [e.clientX-r.left,e.clientY-r.top];}
+  els.drawCanvas.addEventListener('pointerdown',e=>{if(e.pointerType==='touch')return; e.preventDefault();snapshot();drawing=true;drawingDirty=true;els.drawCanvas.setPointerCapture(e.pointerId);const [x,y]=pointerXY(e);ctx.beginPath();ctx.moveTo(x,y);});
+  els.drawCanvas.addEventListener('pointermove',e=>{if(!drawing)return;e.preventDefault();const pts=e.getCoalescedEvents?e.getCoalescedEvents():[e];for(const p of pts){const [x,y]=pointerXY(p);ctx.lineTo(x,y);ctx.stroke();ctx.beginPath();ctx.moveTo(x,y);}});
+  const stopDraw=()=>{drawing=false;saveDraft();};els.drawCanvas.addEventListener('pointerup',stopDraw);els.drawCanvas.addEventListener('pointercancel',stopDraw);
+  els.undoDraw.addEventListener('click',()=>{const x=undoStack.pop();if(!x)return;const im=new Image();const r=els.drawCanvas.getBoundingClientRect();im.onload=()=>{ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,els.drawCanvas.width,els.drawCanvas.height);ctx.restore();ctx.fillStyle='#fff';ctx.fillRect(0,0,r.width,r.height);ctx.drawImage(im,0,0,r.width,r.height);drawingDirty=true;saveDraft();};im.src=x;});
+  els.clearDraw.addEventListener('click',()=>{snapshot();const r=els.drawCanvas.getBoundingClientRect();ctx.fillStyle='#fff';ctx.fillRect(0,0,r.width,r.height);drawingDirty=true;qstate(current().q.id).drawing=null;saveProgress();});
+
+  function buildPrompt(q,answer,hasImage){
+    const context=q.contextText?`\nSHARED CONTEXT:\n${q.contextText}\n`:'';
+    const ao=Object.keys(q.ao||{}).length?`Assessment objectives: ${Object.entries(q.ao).map(([k,v])=>`${k} ${v}`).join(', ')}.`:'';
+    const common=`You are a strict Pearson Edexcel International A Level Psychology Unit 1 examiner. Mark ONLY against the exact question and exact mark scheme supplied. Do not award marks for relevant-but-wrong-study material. Where the scheme says generic answers score 0, enforce that. Accept equivalent wording only when the scheme permits reasonable marking points. Do not invent criteria. Student spelling/grammar should not lose credit unless meaning is unclear. ${hasImage?'The student has also attached a drawing/graph answer image; inspect it as part of the response.':''}\n\nQUESTION ${q.label} (${q.marks} marks)${context}\n${q.questionText}\n\nEXACT PEARSON MARK SCHEME:\n${q.schemeText}\n\nSTUDENT ANSWER:\n${answer||'[answer supplied as drawing image]'}\n\n${ao}`;
+    if(q.marks<=4){
+      return `${common}\n\nReturn ONLY these four single-line fields, with no markdown and no extra explanation:\nSCORE: integer/${q.marks}\nCREDIT: concise points that actually earned marks\nMISSING: concise missing/incorrect point(s), or "Nothing" if full marks\nIMPROVED: a concise answer that would earn full marks`;
+    }
+    return `${common}\n\nThis is an extended response. Apply the exact Pearson level descriptors and AO balance in the scheme. Choose the level first from the response quality, then a mark within it.\nReturn ONLY these single-line fields, no markdown:\nSCORE: integer/${q.marks}\nLEVEL: integer or N/A\nAO: give each assessed AO as score/max, e.g. AO1 3/4; AO3 2/4\nCREDIT: strongest creditworthy content\nMISSING: what prevents the next mark/level\nUPGRADE: the single highest-value change to make\nBLUEPRINT: a compact full-mark paragraph plan, not a full essay`;
+  }
+
+  function parseExaminer(text,q){
+    if(!text||typeof text!=='string')throw new Error('Examiner returned an empty answer');
+    const cleaned=text.replace(/```[a-z]*|```/gi,'').trim();
+    const sm=cleaned.match(/SCORE\s*:\s*(\d{1,2})\s*\/\s*(\d{1,2})/i) || cleaned.match(/(?:MARK|SCORE)\s*[:=-]\s*(\d{1,2})/i);
+    if(!sm)throw new Error('Examiner response had no readable mark');
+    const score=Math.max(0,Math.min(q.marks,parseInt(sm[1],10)));
+    const fields={};let cur=null;
+    for(const raw of cleaned.split(/\r?\n/)){
+      const m=raw.match(/^\s*(SCORE|LEVEL|AO|CREDIT|MISSING|IMPROVED|UPGRADE|BLUEPRINT)\s*:\s*(.*)$/i);
+      if(m){cur=m[1].toUpperCase();fields[cur]=m[2].trim();}else if(cur&&raw.trim()){fields[cur]+=' '+raw.trim();}
+    }
+    let level=null;if(fields.LEVEL&&!/N\/A/i.test(fields.LEVEL)){const m=fields.LEVEL.match(/\d+/);if(m)level=parseInt(m[0],10);}
+    const ao={};if(fields.AO){for(const m of fields.AO.matchAll(/(AO\d)\s*[:=]?\s*(\d+)\s*\/\s*(\d+)/gi))ao[m[1].toUpperCase()]=`${m[2]}/${m[3]}`;}
+    return {score,level,ao,credit:fields.CREDIT||'',missing:fields.MISSING||'',upgrade:fields.UPGRADE||'',modelAnswer:fields.IMPROVED||fields.BLUEPRINT||'',raw:cleaned};
+  }
+
+  async function oneOpenRouterRequest(apiKey,q,answer,drawing,controller,tag){
+    const prompt=buildPrompt(q,answer,!!drawing);
+    let userContent=prompt;
+    if(drawing){userContent=[{type:'text',text:prompt},{type:'image_url',image_url:{url:drawing}}];}
+    const body={model:'openrouter/free',messages:[{role:'user',content:userContent}],temperature:0.05,max_tokens:q.marks<=4?260:700};
+    const res=await fetch('https://openrouter.ai/api/v1/chat/completions',{method:'POST',signal:controller.signal,headers:{'Authorization':`Bearer ${apiKey}`,'Content-Type':'application/json','HTTP-Referer':location.origin,'X-Title':'AI Exam Tutor'},body:JSON.stringify(body)});
+    const txt=await res.text();let data;try{data=JSON.parse(txt);}catch{throw new Error(`OpenRouter ${res.status}: invalid response`);}
+    if(!res.ok)throw new Error(`OpenRouter ${res.status}: ${data?.error?.message||'request failed'}`);
+    let content=data?.choices?.[0]?.message?.content;
+    if(Array.isArray(content))content=content.map(x=>x?.text||'').join('\n');
+    const parsed=parseExaminer(content,q);parsed.model=data?.model||'openrouter/free';parsed.route=tag;return parsed;
+  }
+
+  async function turboMark(q,answer,drawing){
+    const apiKey=sessionStorage.getItem(KEY_KEY);if(!apiKey){openSettings();throw new Error('Add your OpenRouter API key first.');}
+    const deadline=q.marks<=4?28000:58000;const hedgeDelay=q.marks<=4?3500:6000;const started=performance.now();const controllers=[];let finished=false;let hedgeStarted=false;
+    const make=(tag)=>{const c=new AbortController();controllers.push(c);return oneOpenRouterRequest(apiKey,q,answer,drawing,c,tag);};
+    let rejectHedge,resolveHedge;const hedgePromise=new Promise((res,rej)=>{resolveHedge=res;rejectHedge=rej;});
+    const startHedge=()=>{if(hedgeStarted||finished)return;hedgeStarted=true;els.markSubstatus.textContent='Slow route detected - racing a second free examiner.';make('hedge').then(resolveHedge,rejectHedge);};
+    const hedgeTimer=setTimeout(startHedge,hedgeDelay);
+    const primary=make('primary').catch(e=>{startHedge();throw e;});
+    const hardTimer=setTimeout(()=>controllers.forEach(c=>c.abort()),deadline);
+    const uiTimer=setInterval(()=>{const sec=(performance.now()-started)/1000;els.countdown.textContent=`${sec.toFixed(1)}s / ${(deadline/1000).toFixed(0)}s`;},100);
+    try{
+      const result=await Promise.any([primary,hedgePromise]);finished=true;controllers.forEach(c=>c.abort());result.latencyMs=Math.round(performance.now()-started);return result;
+    } catch(err){
+      // If both failed very early, one final ordinary free-router call can use the remaining budget.
+      const elapsed=performance.now()-started;const remain=deadline-elapsed;
+      if(remain>6500){
+        els.markSubstatus.textContent='Both first routes failed - using the final free fallback within the same deadline.';
+        try{const r=await make('final');r.latencyMs=Math.round(performance.now()-started);finished=true;controllers.forEach(c=>c.abort());return r;}catch(e){err=e;}
+      }
+      if(performance.now()-started>=deadline-500 || controllers.some(c=>c.signal.aborted))throw new Error(`AI deadline reached (${Math.round(deadline/1000)}s). No successful free examiner finished in time.`);
+      const msgs=(err?.errors||[err]).map(e=>e?.message).filter(Boolean);throw new Error(msgs[0]||'All free examiners failed.');
+    } finally {finished=true;clearTimeout(hedgeTimer);clearTimeout(hardTimer);clearInterval(uiTimer);controllers.forEach(c=>c.abort());}
+  }
+
+  async function markCurrent(){
+    const {q}=current();const answer=els.answerBox.value.trim();const s=qstate(q.id);const drawing=(drawingDirty?canvasData():s.drawing);
+    if(!answer&&!drawing)return toast('Write an answer or add a drawing first.');
+    saveDraft();els.markBtn.disabled=true;els.markProgress.classList.add('show');els.markStatus.textContent=q.marks<=4?'Fast examiner marking...':'Extended-response examiner marking...';els.markSubstatus.textContent=q.marks<=4?'28-second hard maximum wait.':'58-second hard maximum wait.';els.countdown.textContent='0.0s';
+    try{
+      const r=await turboMark(q,answer,drawing);r.answer=answer;r.time=Date.now();s.attempts=s.attempts||[];s.attempts.push(r);if(s.attempts.length>12)s.attempts=s.attempts.slice(-12);saveProgress();renderResult(r,q);renderAttempts();updateStats();renderPaperList();await showScheme(true);markStudyDay();toast(`Marked ${r.score}/${q.marks} in ${(r.latencyMs/1000).toFixed(1)}s`);
+    }catch(e){
+      els.feedback.innerHTML='';const box=feedbackBox('AI marking did not complete',e.message,'bad');els.feedback.appendChild(box);const exact=feedbackBox('Your answer is saved','No fake mark was recorded. The exact Pearson scheme is still available below.','');els.feedback.appendChild(exact);await showScheme(true);
+    }finally{els.markBtn.disabled=false;els.markProgress.classList.remove('show');}
+  }
+
+  function markStudyDay(){const d=new Date().toISOString().slice(0,10);if(progress.lastStudyDate!==d){const yesterday=new Date(Date.now()-86400000).toISOString().slice(0,10);progress.streak=progress.lastStudyDate===yesterday?(progress.streak||0)+1:1;progress.lastStudyDate=d;saveProgress();updateStats();}}
+  // More efficient average independent of object lookup.
+  function updateStats(){let done=0,earned=0,possible=0;for(const p of papers){for(const q of p.questions){const a=qstate(q.id).attempts?.at(-1);if(a){done++;earned+=a.score;possible+=q.marks;}}}els.statDone.textContent=done;els.statAvg.textContent=possible?Math.round(earned/possible*100)+'%':'-';els.statStreak.textContent=progress.streak||0;}
+
+  function openSettings(){els.apiKeyInput.value=sessionStorage.getItem(KEY_KEY)||'';els.settingsModal.classList.add('show');}
+  function closeSettings(){els.settingsModal.classList.remove('show');}
+  function nextFrame(){return new Promise(r=>requestAnimationFrame(()=>r()));}
+
+  els.answerBox.addEventListener('input',()=>{updateWordCount();clearTimeout(autosaveTimer);autosaveTimer=setTimeout(saveDraft,350);});
+  els.markBtn.addEventListener('click',markCurrent);els.schemeBtn.addEventListener('click',()=>showScheme());els.clearBtn.addEventListener('click',()=>{els.answerBox.value='';qstate(current().q.id).draft='';saveProgress();updateWordCount();});
+  els.prevBtn.addEventListener('click',()=>adjacent(-1));els.nextBtn.addEventListener('click',()=>adjacent(1));els.randomBtn.addEventListener('click',randomQuestion);
+  els.questionFilter.addEventListener('change',()=>{updateNav();renderPaperList();});els.markFilter.addEventListener('change',()=>{updateNav();renderPaperList();});
+  els.starBtn.addEventListener('click',()=>{const s=qstate(current().q.id);s.starred=!s.starred;saveProgress();renderQuestion();});
+  els.drawToggle.addEventListener('click',()=>{els.drawWrap.classList.toggle('show');if(els.drawWrap.classList.contains('show'))setTimeout(()=>setupCanvas(qstate(current().q.id).drawing),20);});
+  els.settingsBtn.addEventListener('click',openSettings);els.closeSettings.addEventListener('click',closeSettings);els.saveSettings.addEventListener('click',()=>{const k=els.apiKeyInput.value.trim();if(k)sessionStorage.setItem(KEY_KEY,k);else sessionStorage.removeItem(KEY_KEY);closeSettings();toast('Settings saved for this browser session.');});
+  els.settingsModal.addEventListener('click',e=>{if(e.target===els.settingsModal)closeSettings();});
+  els.mobilePapers.addEventListener('click',()=>els.sidebar.classList.toggle('open'));
+  els.studyModeBtn.addEventListener('click',()=>{focusMode=!focusMode;document.querySelector('.sidebar').style.display=focusMode?'none':'';document.querySelector('.rightbar').style.display=focusMode?'none':'';document.querySelector('.shell').style.gridTemplateColumns=focusMode?'1fr':'';els.studyModeBtn.textContent=focusMode?'Exit focus':'⚡ Focus mode';});
+  els.exportBtn.addEventListener('click',()=>{const blob=new Blob([JSON.stringify(progress,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='psychology-progress.json';a.click();URL.revokeObjectURL(a.href);});
+  els.resetBtn.addEventListener('click',()=>{if(confirm('Reset all Psychology progress on this device?')){localStorage.removeItem(STORE_KEY);progress=loadProgress();closeSettings();renderQuestion();toast('Progress reset.');}});
+  window.addEventListener('keydown',e=>{if(e.altKey&&e.key==='ArrowRight'){e.preventDefault();adjacent(1);}if(e.altKey&&e.key==='ArrowLeft'){e.preventDefault();adjacent(-1);}if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){e.preventDefault();markCurrent();}});
+  window.addEventListener('resize',()=>{clearTimeout(window.__canvasResize);window.__canvasResize=setTimeout(()=>{if(els.drawWrap.classList.contains('show'))setupCanvas(qstate(current().q.id).drawing);},250);});
+  document.body.classList.add('auto-dark');
+  if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js?v=1').catch(()=>{});}
+  renderQuestion();
+})();

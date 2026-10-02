@@ -1,0 +1,30 @@
+AI EXAM TUTOR REBUILD - QA SUMMARY
+
+Corpus
+- 11 Psychology Unit 1 WPS01/01 paper/mark-scheme pairs
+- 199 mapped question parts
+- 64 marks in every paper
+- Years sorted: 2020, 2021, 2022, 2022, 2023, 2023, 2024, 2024, 2025, 2026, 2026
+
+Mapping checks
+- Every question has at least one exact question crop.
+- Every question has at least one exact mark-scheme crop.
+- Every image reference resolves to an asset in that paper's bundle.
+- Printed question mark values were compared to extracted scheme totals.
+- Nested January 2024 question 8(a)(i) / 8(a)(ii) is mapped separately.
+- Extended 8/12-mark entries include their following Pearson level-descriptor page(s).
+
+Deployment checks
+- Asset bundles are about 2.0-2.5 MB each.
+- No individual deliverable file exceeds 3 MB.
+- Top-level-only deployment: no fragile nested image paths.
+
+AI path checks
+- No experimental preferred-latency / minimum-throughput provider parameters.
+- No structured-output requirement that can eliminate free endpoints.
+- Whole-request AbortController deadline covers response-body download as well as initial connection.
+- Short deadline: 28 s; extended deadline: 58 s.
+- Failed AI calls do not save a fake attempt.
+
+Limit not testable without the user's key
+- Live OpenRouter provider latency/availability cannot be guaranteed by the static site itself.
